@@ -1,0 +1,18 @@
+.. Initialising CHIMES
+   Alexander Richings, 23rd March 2020
+
+.. _InitChimes_label:
+
+Initialising CHIMES
+-------------------
+
+At the beginning of the simulation you will need to initialise the CHIMES chemistry solver. This will involve setting up the chemical network, based on which elements are to be included in the network as specified by the user, and then reading in the HDF5 data files and allocating memory to the various tables that store the reaction coefficients, photoionisation cross sections etc.
+
+To initialise CHIMES, you need to call the ``init_chimes(*myGlobalVars)`` function. This takes as an argument a pointer to an instance of the ``globalVariables`` structure. Some of the variables in this structure will need to be set before the call to ``init_chimes(*myGlobalVars)``, as they define the paths where the data files are stored and details of the network such as which elements to include. Note that the ``speciesIndices[]`` and ``totalNumberOfSpecies`` variables will be set by ``init_chimes(*myGlobalVars)`` itself and do not need to be provided by the User. See the :ref:`DataStructures_label` section for details.
+
+The data structures and arrays used to store the various reaction rate data are all defined internally within CHIMES. The call to ``init_chimes(*myGlobalVars)`` will automatically set up these structures, allocate memory to the arrays etc. as required.
+
+Once you have initialised CHIMES, you will then need to set up the ``gasVariables`` structure for each gas particle/cell. When you first set up the abundance array for a given particle/cell, you will need to initiallise the abundances to a valid state, meaning that it needs to obey the various constraint equations, i.e. the sum of all ions/molecules of a given element needs to be equal to the total abundance of that element, and the total charge of all positive and negative ions needs to be neutral. For convenience, we provide a routine, ``initialise_gas_abundances(*myGasVars, *myGlobalVars)``, that will set all elements to a given ionisation state, as determined by the ``globalVariables.InitIonState`` parameter. For example, if ``globalVariables.InitIonState == 0``, all elements will be set to fully neutral. If the maximum ionisation state for a given element is less than the ``InitIonState`` parameter, that element will be put in its maximum ionisation state. For example, if ``InitIonState == 2``, all hydrogen will be singly ionised. The molecules are set to zero in this routine. It takes two arguments: a pointer to the instance of the gasVariables structure for the given particle/cell, and a pointer to the instance of the ``globalVariables`` structure. 
+
+The ``initialise_gas_abundances(*myGasVars, *myGlobalVars)`` function is very simple, as each element is put into just one ionisation state. The idea is to put the abundance array into a valid state that obeys the constraint equations. If you want your simulation to start from an equilibrium state, you can then evolve the abundances of each particle/cell for a long time (say, a Hubble time) at fixed temperature to compute the equilibrium state. Alternatively, you could compute the equilibrium state of each particle/cell beforehand (for example, using CHIMES Driver) and write the resulting equilibrium abundance arrays to the initial conditions (ICs) file for your simulation. These can then just be read in from the ICs at the beginning of the simulation. In this case you wouldn't need to run ``initialise_gas_abundances(*myGasVars, *myGlobalVars)`` first as the equilibrium states would already obey the constraint equations. 
+
