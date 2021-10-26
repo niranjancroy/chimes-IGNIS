@@ -417,7 +417,7 @@ class SnapshotData:
             else: 
                 raise Exception("compute_stellar_fluxes == %d not recognised. Aborting." % (self.driver_pars["compute_stellar_fluxes"], )) 
         elif self.driver_pars["UV_field"] == "S04": 
-            self.gas_coords_arr = load_from_snapshot('Coordinates', ptype, nofeedback_dir, snapnum) * unit_length_in_cgs 
+            self.gas_coords_arr = load_from_snapshot('Coordinates', 0, nofeedback_dir, snapnum) * unit_length_in_cgs 
 
         if self.driver_pars["disable_shielding_in_HII_regions"] == 1: 
             try: 
