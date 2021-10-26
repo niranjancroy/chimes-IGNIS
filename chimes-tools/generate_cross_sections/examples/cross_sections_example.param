@@ -1,0 +1,4 @@
+chimes_main_data_path		/home/username/chimes-data/chimes_main_data.hdf5
+cross_sections_data_path	/home/username/chimes-tools/generate_cross_sections/data
+spectrum_file 			spectrum_B87.dat
+output_file 			cross_sections_B87.hdf5 

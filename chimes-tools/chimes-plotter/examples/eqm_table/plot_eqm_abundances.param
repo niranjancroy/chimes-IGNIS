@@ -1,0 +1,28 @@
+plotter_mode	eqm_table
+input_file  	eqm_table.hdf5
+output_file  	eqm_plot.png
+
+species  	elec
+species  	HI
+species 	HII 
+species  	H2
+species 	HeI 
+species 	HeII 
+species 	HeIII 
+
+log_y_min 	-6.0 
+log_y_max 	0.5 
+
+x_variable  	temperature
+log_x_min 	2.0 
+log_x_max 	9.0 
+
+line_variable  	metallicity
+N_lines  	3
+line_var_min  	-2.0
+line_var_max  	0.0 
+
+panel_variable 	density
+N_panels  	9
+panel_var_min 	-4.0
+panel_var_max 	4.0

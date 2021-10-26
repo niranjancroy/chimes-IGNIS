@@ -1,0 +1,55 @@
+SUNDIALS_PATH = 
+HDF5_INCL_PATH = 
+HDF5_LIB_PATH = 
+
+CHIMES_PATH = /home/username/chimes
+
+CC = gcc
+CFLAGS = -DCHIMES_USE_DOUBLE_PRECISION
+EXEC = chimes-debugger 
+
+INCL = -I$(strip $(CHIMES_PATH))/src
+LIBS = -lm 
+
+ifeq ($(strip $(SUNDIALS_PATH)),)
+    INCL +=
+    LIBS += -lsundials_cvode -lsundials_nvecserial -lsundials_sunlinsoldense -lsundials_sunmatrixdense
+else
+    INCL += -I$(strip $(SUNDIALS_PATH))/include
+    LIBS += -L$(strip $(SUNDIALS_PATH))/lib64 -L$(strip $(SUNDIALS_PATH))/lib -lsundials_cvode -lsundials_nvecserial -lsundials_sunlinsoldense -lsundials_sunmatrixdense
+endif 
+
+ifeq ($(strip $(HDF5_INCL_PATH)),)
+    INCL += 
+else 
+    INCL += -I$(strip $(HDF5_INCL_PATH)) 
+endif 
+
+ifeq ($(strip $(HDF5_LIB_PATH)),)
+    LIBS += -lhdf5 
+else 
+    LIBS += -L$(strip $(HDF5_LIB_PATH)) -lhdf5 
+endif 
+
+OBJS = chimes_cooling.o rate_equations.o update_rates.o init_chimes.o chimes.o main.o 
+
+$(EXEC): $(OBJS)
+	$(CC) $(CFLAGS) -g -O0 -o $(EXEC) $(OBJS) $(LIBS) -DH5_USE_16_API 
+
+main.o: ./main.c $(strip $(CHIMES_PATH))/src/chimes_vars.h $(strip $(CHIMES_PATH))/src/chimes_proto.h $(strip $(CHIMES_PATH))/src/chimes_interpol.h 
+	$(CC) $(CFLAGS) -c -Wall -g -O0 -DH5_USE_16_API $(INCL) ./main.c -o main.o 
+
+chimes.o: $(strip $(CHIMES_PATH))/src/chimes.c $(strip $(CHIMES_PATH))/src/chimes_vars.h $(strip $(CHIMES_PATH))/src/chimes_proto.h $(strip $(CHIMES_PATH))/src/chimes_interpol.h 
+	$(CC) $(CFLAGS) -c -Wall -g -O0 -DH5_USE_16_API $(INCL) $(strip $(CHIMES_PATH))/src/chimes.c -o chimes.o
+
+init_chimes.o: $(strip $(CHIMES_PATH))/src/init_chimes.c $(strip $(CHIMES_PATH))/src/chimes_vars.h $(strip $(CHIMES_PATH))/src/chimes_proto.h $(strip $(CHIMES_PATH))/src/chimes_interpol.h 
+	$(CC) $(CFLAGS) -c -Wall -g -O0 -DH5_USE_16_API $(INCL) $(strip $(CHIMES_PATH))/src/init_chimes.c -o init_chimes.o
+
+update_rates.o: $(strip $(CHIMES_PATH))/src/update_rates.c $(strip $(CHIMES_PATH))/src/chimes_vars.h $(strip $(CHIMES_PATH))/src/chimes_proto.h $(strip $(CHIMES_PATH))/src/chimes_interpol.h 
+	$(CC) $(CFLAGS) -c -Wall -g -O0 -DH5_USE_16_API $(INCL) $(strip $(CHIMES_PATH))/src/update_rates.c -o update_rates.o
+
+rate_equations.o: $(strip $(CHIMES_PATH))/src/rate_equations.c $(strip $(CHIMES_PATH))/src/chimes_vars.h $(strip $(CHIMES_PATH))/src/chimes_proto.h $(strip $(CHIMES_PATH))/src/chimes_interpol.h 
+	$(CC) $(CFLAGS) -c -Wall -g -O0 -DH5_USE_16_API $(INCL) $(strip $(CHIMES_PATH))/src/rate_equations.c -o rate_equations.o
+
+chimes_cooling.o: $(strip $(CHIMES_PATH))/src/chimes_cooling.c $(strip $(CHIMES_PATH))/src/chimes_vars.h $(strip $(CHIMES_PATH))/src/chimes_proto.h $(strip $(CHIMES_PATH))/src/chimes_interpol.h 
+	$(CC) $(CFLAGS) -c -Wall -g -O0 -DH5_USE_16_API $(INCL) $(strip $(CHIMES_PATH))/src/chimes_cooling.c -o chimes_cooling.o
