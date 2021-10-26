@@ -244,7 +244,7 @@ class SnapshotData:
         #with g.readsnap(nofeedback_dir, snapnum, part_type, header_only=0) as h5file:
         
         #with h5py.File(self.driver_pars['input_file'], 'r') as h5file:
-        header = g.readsnap(nofeedback_dir, snapnum, ptype, header_only=1)
+        header = g.readsnap(nofeedback_dir, snapnum, 0, header_only=1)
         
         # Define unit conversions. 
         #hubble = h5file['Header'].attrs['HubbleParam']
@@ -275,11 +275,11 @@ class SnapshotData:
         # to total in the order: 
         # All_metals, He, C, N, O, Ne, Mg, Si, S, Ca, Fe 
         ##self.metallicity_arr = np.array(h5file['PartType0/Metallicity'])
-        self.metallicity_arr = load_from_snapshot( 'Metallicity', ptype, nofeedback_dir, snapnum)
+        self.metallicity_arr = load_from_snapshot( 'Metallicity', 0, nofeedback_dir, snapnum)
 
         # Calculate nH from the density array 
         ##density_arr = np.array(h5file['PartType0/Density'])
-        density_arr = load_from_snapshot( 'Density', ptype, nofeedback_dir, snapnum)
+        density_arr = load_from_snapshot( 'Density', 0, nofeedback_dir, snapnum)
 
         XH = 1.0 - (self.metallicity_arr[:, 0] + self.metallicity_arr[:, 1]) 
         self.nH_arr = (unit_mass_in_cgs / (unit_length_in_cgs ** 3)) * density_arr * XH / proton_mass_cgs
@@ -291,14 +291,14 @@ class SnapshotData:
         else: 
             try: 
                 ##self.init_chem_arr = np.array(h5file[self.driver_pars["snapshot_chemistry_array"]]) 
-                self.init_chem_arr = load_from_snapshot( 'snapshot_chemistry_array', ptype, nofeedback_dir, snapnum)
+                self.init_chem_arr = load_from_snapshot( 'snapshot_chemistry_array', 0, nofeedback_dir, snapnum)
             except KeyError: 
                 raise Exception("ERROR: Chemistry array not found. The %s array is not present in the snapshot." % (self.driver_pars["snapshot_chemistry_array"], )) 
 
         # Calculate temperature from 
         # the internal energy array                     
         ##internal_energy_arr = np.array(h5file['PartType0/InternalEnergy']) 
-        internal_energy_arr = load_from_snapshot( 'InternalEnergy', ptype, nofeedback_dir, snapnum)
+        internal_energy_arr = load_from_snapshot( 'InternalEnergy', 0, nofeedback_dir, snapnum)
         internal_energy_arr *= unit_internal_energy_in_cgs   # cgs 
 
         # If the simulation was run with CHIMES, we can use the mean molecular 
@@ -306,11 +306,11 @@ class SnapshotData:
         # temperature. Otherwise, use mu assuming neutral gas. 
         try: 
             ##mmw_mu_arr = np.array(h5file['PartType0/ChimesMu']) 
-            mmw_mu_arr = load_from_snapshot('ChimesMu', ptype, nofeedback_dir, snapnum)
+            mmw_mu_arr = load_from_snapshot('ChimesMu', 0, nofeedback_dir, snapnum)
         except KeyError: 
             helium_mass_fraction = self.metallicity_arr[:,1]
             y_helium = helium_mass_fraction / (4*(1-helium_mass_fraction))
-            ElectronAbundance = load_from_snapshot('ElectronAbundance', ptype, nofeedback_dir, snapnum)
+            ElectronAbundance = load_from_snapshot('ElectronAbundance', 0, nofeedback_dir, snapnum)
             mmw_mu_arr = (1.0 + 4*y_helium) / (1+y_helium+ElectronAbundance) 
 
         self.temperature_arr = (2.0 / 3.0) * mmw_mu_arr * proton_mass_cgs * internal_energy_arr / boltzmann_cgs 
@@ -331,7 +331,7 @@ class SnapshotData:
                 # Read in the star and gas particle data 
                 # needed to compute stellar fluxes. 
                 ##self.gas_coords_arr = np.array(h5file['PartType0/Coordinates']) * unit_length_in_cgs 
-                self.gas_coords_arr = load_from_snapshot('Coordinates', ptype, nofeedback_dir, snapnum) * unit_length_in_cgs 
+                self.gas_coords_arr = load_from_snapshot('Coordinates', 0, nofeedback_dir, snapnum) * unit_length_in_cgs 
 
                 if self.driver_pars["snapshot_cosmo_flag"] == 0: 
                     ##time_Myr = h5file['Header'].attrs['Time'] * unit_time_in_cgs / seconds_in_a_Myr
