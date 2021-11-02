@@ -18,7 +18,7 @@ from shielding_utils import compute_jeans_shield_length, compute_colibre_shield_
 
 
 #niranjan-2021: adding the directory and snapnum
-nofeedback_dir = '/home/jovyan/data/h113_HR_sn152/nof_s8e1_n128'
+nofeedback_dir = '/mnt/sdceph/users/dangles/FIRE/bhfeedback/h113_HR_sn152/nof_s8e1_n128'
 snapnum = 252
 ptype = 0
 
@@ -357,35 +357,35 @@ class SnapshotData:
                         self.star_mass_arr = np.empty(0, dtype = np.float32) 
                         self.star_age_Myr_arr = np.empty(0, dtype = np.float32) 
 
-##                    try:
-##                        ##coords_type2 = np.array(h5file['PartType2/Coordinates']) * unit_length_in_cgs
-##                        ##mass_type2 = np.array(h5file['PartType2/Masses']) * unit_mass_in_cgs
-##                        ##age_type2 = time_Myr - (np.array(h5file['PartType2/StellarFormationTime']) * unit_time_in_cgs / seconds_in_a_Myr)
-##                        coords_type2 = load_from_snapshot('Coordinates', 2, nofeedback_dir, snapnum) * unit_length_in_cgs
-##                        mass_type2 = load_from_snapshot('Masses', 2, nofeedback_dir, snapnum) * unit_mass_in_cgs
-##                        age_type2 = time_Myr - (load_from_snapshot('StellarFormationTime', 2, nofeedback_dir, snapnum) * unit_time_in_cgs / seconds_in_a_Myr )
-##
-##                        self.star_coords_arr = np.concatenate((self.star_coords_arr, coords_type2)) 
-##                        self.star_mass_arr = np.concatenate((self.star_mass_arr, mass_type2)) 
-##                        self.star_age_Myr_arr = np.concatenate((self.star_age_Myr_arr, age_type2)) 
-##                    except KeyError: 
-##                        print("Type 2 star particles are not present. Continuing.")
-##                        sys.stdout.flush()
-##
-##                    try:
-##                        ##coords_type3 = np.array(h5file['PartType3/Coordinates']) * unit_length_in_cgs
-##                        ##mass_type3 = np.array(h5file['PartType3/Masses']) * unit_mass_in_cgs
-##                        ##age_type3 = time_Myr - (np.array(h5file['PartType3/StellarFormationTime']) * unit_time_in_cgs / seconds_in_a_Myr)
-##                        coords_type3 = load_from_snapshot('Coordinates', 3, nofeedback_dir, snapnum) * unit_length_in_cgs
-##                        mass_type3 = load_from_snapshot('Masses', 3, nofeedback_dir, snapnum) * unit_mass_in_cgs
-##                        age_type3 = time_Myr - (load_from_snapshot('StellarFormationTime', 3, nofeedback_dir, snapnum) * unit_time_in_cgs / seconds_in_a_Myr )
-##
-##                        self.star_coords_arr = np.concatenate((self.star_coords_arr, coords_type3)) 
-##                        self.star_mass_arr = np.concatenate((self.star_mass_arr, mass_type3)) 
-##                        self.star_age_Myr_arr = np.concatenate((self.star_age_Myr_arr, age_type3)) 
-##                    except KeyError:                               
-##                        print("Type 3 star particles are not present. Continuing.")
-##                        sys.stdout.flush()
+                    try:
+                        ##coords_type2 = np.array(h5file['PartType2/Coordinates']) * unit_length_in_cgs
+                        ##mass_type2 = np.array(h5file['PartType2/Masses']) * unit_mass_in_cgs
+                        ##age_type2 = time_Myr - (np.array(h5file['PartType2/StellarFormationTime']) * unit_time_in_cgs / seconds_in_a_Myr)
+                        coords_type2 = load_from_snapshot('Coordinates', 2, nofeedback_dir, snapnum) * unit_length_in_cgs
+                        mass_type2 = load_from_snapshot('Masses', 2, nofeedback_dir, snapnum) * unit_mass_in_cgs
+                        age_type2 = time_Myr - (load_from_snapshot('StellarFormationTime', 2, nofeedback_dir, snapnum) * unit_time_in_cgs / seconds_in_a_Myr )
+
+                        self.star_coords_arr = np.concatenate((self.star_coords_arr, coords_type2)) 
+                        self.star_mass_arr = np.concatenate((self.star_mass_arr, mass_type2)) 
+                        self.star_age_Myr_arr = np.concatenate((self.star_age_Myr_arr, age_type2)) 
+                    except KeyError: 
+                        print("Type 2 star particles are not present. Continuing.")
+                        sys.stdout.flush()
+
+                    try:
+                        ##coords_type3 = np.array(h5file['PartType3/Coordinates']) * unit_length_in_cgs
+                        ##mass_type3 = np.array(h5file['PartType3/Masses']) * unit_mass_in_cgs
+                        ##age_type3 = time_Myr - (np.array(h5file['PartType3/StellarFormationTime']) * unit_time_in_cgs / seconds_in_a_Myr)
+                        coords_type3 = load_from_snapshot('Coordinates', 3, nofeedback_dir, snapnum) * unit_length_in_cgs
+                        mass_type3 = load_from_snapshot('Masses', 3, nofeedback_dir, snapnum) * unit_mass_in_cgs
+                        age_type3 = time_Myr - (load_from_snapshot('StellarFormationTime', 3, nofeedback_dir, snapnum) * unit_time_in_cgs / seconds_in_a_Myr )
+
+                        self.star_coords_arr = np.concatenate((self.star_coords_arr, coords_type3)) 
+                        self.star_mass_arr = np.concatenate((self.star_mass_arr, mass_type3)) 
+                        self.star_age_Myr_arr = np.concatenate((self.star_age_Myr_arr, age_type3)) 
+                    except KeyError:                               
+                        print("Type 3 star particles are not present. Continuing.")
+                        sys.stdout.flush()
 
                 else: 
                     ##omega0 = h5file['Header'].attrs['Omega0'] 
@@ -451,13 +451,13 @@ class SnapshotData:
         R_star = np.sqrt((relative_cord_star*relative_cord_star).sum(axis=1))
         star_mask = R_star < radius
         
-        #applying the masks
-        self.metallicity_arr = self.metallicity_arr[gas_mask]
+        #applying the masks. If property has more than one column, applying mask just on the number of particles
+        self.metallicity_arr = self.metallicity_arr[gas_mask,:] #multicolumn
         self.nH_arr = self.nH_arr[gas_mask]
-        self.init_chem_arr = self.init_chem_arr[gas_mask]
+        self.init_chem_arr = self.init_chem_arr[gas_mask,:] #multicolumn
         self.temperature_arr = self.temperature_arr[gas_mask]
-        self.gas_coords_arr = self.gas_coords_arr[gas_mask]
-        self.star_coords_arr = self.star_coords_arr[star_mask]
+        self.gas_coords_arr = self.gas_coords_arr[gas_mask,:] #multicolumn
+        self.star_coords_arr = self.star_coords_arr[star_mask,:] #multicolumn
         self.star_mass_arr = self.star_mass_arr[star_mask]
         self.star_age_Myr_arr = self.star_age_Myr_arr[star_mask]
         #self.HIIregion_delay_time  = self.HIIregion_delay_time[mask]
