@@ -2,14 +2,14 @@ import h5py
 import numpy as np 
 import os
 import sys 
-sys.path.append('/home/jovyan/code/pfh_python')
-sys.path.append('/home/jovyan/code/daa_python')
+sys.path.append('/mnt/home/nroy/libraries/pfh_python')
+sys.path.append('/mnt/home/nroy/libraries/daa_python')
 #sys.path.append('/home/jovyan/code/utilities')
 #sys.path.append('/home/jovyan/code/gizmo_analysis')
 import gadget as g
 from gizmopy.load_fire_snap import load_fire_snap #go othrough the ocde
 from gizmopy.load_from_snapshot import load_from_snapshot #go othrough the ocde
-from daa_python import *
+#from daa_python import *
 from daa_constants import *
 
 from chimes_utils import set_initial_chemistry_abundances 
@@ -428,7 +428,41 @@ class SnapshotData:
         # Set the shielding length array 
         self.set_shielding_array() 
 
+
+	#reading the black hole coordinates to define the center
+        Pbh = g.readsnap( nofeedback_dir, snapnum, 5, cosmological=1 )
+        bh_center = Pbh['p'][0,:]
+ 
+        #filtering the data within cutoff radius wrt black hole
+        distance_filter(self, bh_center, 10)
+        
         return 
+
+
+    def distance_filter(self, center, radius):
+        ''' 'center' is the central coordinate, 'radius' is the radius of desired region in kpc'''
+        #creating mask for gas particles
+        relative_cord_gas = self.gas_coords_arr - center
+        R_gas = np.sqrt((relative_cord_gas*relative_cord_gas).sum(axis=1))
+        gas_mask = R_gas < radius
+        
+        #creating mask for star particles
+        relative_cord_star = self.star_coords_arr - center
+        R_star = np.sqrt((relative_cord_star*relative_cord_star).sum(axis=1))
+        star_mask = R_star < radius
+        
+        #applying the masks
+        self.metallicity_arr = self.metallicity_arr[gas_mask]
+        self.nH_arr = self.nH_arr[gas_mask]
+        self.init_chem_arr = self.init_chem_arr[gas_mask]
+        self.temperature_arr = self.temperature_arr[gas_mask]
+        self.gas_coords_arr = self.gas_coords_arr[gas_mask]
+        self.star_coords_arr = self.star_coords_arr[star_mask]
+        self.star_mass_arr = self.star_mass_arr[star_mask]
+        self.star_age_Myr_arr = self.star_age_Myr_arr[star_mask]
+        #self.HIIregion_delay_time  = self.HIIregion_delay_time[mask]
+        
+        return self
 
 ###################################################################################################
 
