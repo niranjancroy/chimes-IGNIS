@@ -239,41 +239,10 @@ class SnapshotData:
 ##################################################################################################
 
     def load_GIZMO_MultiFile(self):
-         def distance_filter(self, center, radius):
-                ''' 'center' is the central coordinate, 'radius' is the radius of desired region in kpc'''
-                radius = radius #* 3.086e+21 #converting radius into CGS unit cm
-                self.gas_coords_arr = self.gas_coords_arr / unit_length_in_cgs #converting to kpc
-                self.star_coords_arr = self.star_coords_arr / unit_length_in_cgs #converting to kpc
 
-                #creating mask for gas particles
-                relative_cord_gas = self.gas_coords_arr - center
-                R_gas = np.sqrt((relative_cord_gas*relative_cord_gas).sum(axis=1))
-                gas_mask = R_gas < radius
-                
-                print("Radius =", radius) 
-                #creating mask for star particles
-                relative_cord_star = self.star_coords_arr - center
-                R_star = np.sqrt((relative_cord_star*relative_cord_star).sum(axis=1))
-                star_mask = R_star < radius
-                
-                print("nonzero elements in Star_mask = ",np.count_nonzero(star_mask), "R_star =", R_star) 
-                #applying the masks. If property has more than one column, applying mask just on the number of particles
-                self.metallicity_arr = self.metallicity_arr[gas_mask,:] #multicolumn
-                self.nH_arr = self.nH_arr[gas_mask]
-                self.init_chem_arr = self.init_chem_arr[gas_mask,:] #multicolumn
-                self.temperature_arr = self.temperature_arr[gas_mask]
-                self.gas_coords_arr = self.gas_coords_arr[gas_mask,:] #multicolumn
-                self.star_coords_arr = self.star_coords_arr[star_mask,:] #multicolumn
-                self.star_mass_arr = self.star_mass_arr[star_mask]
-                self.star_age_Myr_arr = self.star_age_Myr_arr[star_mask]
-                #self.HIIregion_delay_time  = data.HIIregion_delay_time[mask]
-                print("FILTERED BASED ON DISTANCE. N_star =", len(self.star_mass_arr))               
-                return self 
-
-       
-        #with g.readsnap(nofeedback_dir, snapnum, part_type, header_only=0) as h5file:
+         #with g.readsnap(nofeedback_dir, snapnum, part_type, header_only=0) as h5file:
         
-        #with h5py.File(self.driver_pars['input_file'], 'r') as h5file:
+         #with h5py.File(self.driver_pars['input_file'], 'r') as h5file:
          header = g.readsnap(nofeedback_dir, snapnum, 0, header_only=1)
         
          # Define unit conversions. 
@@ -461,40 +430,53 @@ class SnapshotData:
 
          #reading the black hole coordinates to define the center
          bh_center = load_from_snapshot('Coordinates', 5, nofeedback_dir, snapnum)
-         
+         filtering_distance = 0.01 #kpc 
  
          #filtering the data within cutoff radius wrt black hole
-         distance_filter(self, bh_center, 10)
-         
+         self.distance_filter(bh_center, filtering_distance)
+             
          return 
 
 
-#    def distance_filter(self, center, radius):
-#        ''' 'center' is the central coordinate, 'radius' is the radius of desired region in kpc'''
-#        #creating mask for gas particles
-#        relative_cord_gas = self.gas_coords_arr - center
-#        R_gas = np.sqrt((relative_cord_gas*relative_cord_gas).sum(axis=1))
-#        gas_mask = R_gas < radius
-#        
-#        #creating mask for star particles
-#        relative_cord_star = self.star_coords_arr - center
-#        R_star = np.sqrt((relative_cord_star*relative_cord_star).sum(axis=1))
-#        star_mask = R_star < radius
-#        
-#        #applying the masks. If property has more than one column, applying mask just on the number of particles
-#        self.metallicity_arr = self.metallicity_arr[gas_mask,:] #multicolumn
-#        self.nH_arr = self.nH_arr[gas_mask]
-#        self.init_chem_arr = self.init_chem_arr[gas_mask,:] #multicolumn
-#        self.temperature_arr = self.temperature_arr[gas_mask]
-#        self.gas_coords_arr = self.gas_coords_arr[gas_mask,:] #multicolumn
-#        self.star_coords_arr = self.star_coords_arr[star_mask,:] #multicolumn
-#        self.star_mass_arr = self.star_mass_arr[star_mask]
-#        self.star_age_Myr_arr = self.star_age_Myr_arr[star_mask]
-#        #self.HIIregion_delay_time  = self.HIIregion_delay_time[mask]
-#        
-#        return self
-#
-###################################################################################################
+
+    def distance_filter(self, center, radius):
+         ''' 'center' is the central coordinate, 'radius' is the radius of desired region in kpc. 
+         IMPORTANT::When the black will be used as an ionization source, we need to convert its coordinate to be ZERO'''
+         unit_length_in_cgs = self.driver_pars["snapshot_unitLength_cgs"]
+         
+         radius *= unit_length_in_cgs  #converting radius into CGS unit cm
+         center *= unit_length_in_cgs
+         
+         self.gas_coords_arr -= center
+         self.star_coords_arr -= center
+
+         #creating mask for gas particles
+         #relative_cord_gas = self.gas_coords_arr - center
+         #R_gas = np.sqrt((relative_cord_gas * relative_cord_gas).sum(axis=1))
+         R_gas = np.sqrt((self.gas_coords_arr * self.gas_coords_arr).sum(axis=1))
+         gas_mask = R_gas < radius
+
+         print("Radius =", radius)
+         #creating mask for star particles
+         #relative_cord_star = self.star_coords_arr - center
+         #R_star = np.sqrt((relative_cord_star * relative_cord_star).sum(axis=1))
+         R_star = np.sqrt((self.star_coords_arr * self.star_coords_arr).sum(axis=1))
+         star_mask = R_star < radius
+
+         print("nonzero elements in Star_mask = ",np.count_nonzero(star_mask), "R_star =", R_star, "nonzero elements in gas_mask = ", np.count_nonzero(gas_mask))
+         #applying the masks. If property has more than one column, applying mask just on the number of particles
+         self.metallicity_arr = self.metallicity_arr[gas_mask,:] #multicolumn
+         self.nH_arr = self.nH_arr[gas_mask]
+         self.init_chem_arr = self.init_chem_arr[gas_mask,:] #multicolumn
+         self.temperature_arr = self.temperature_arr[gas_mask]
+         self.gas_coords_arr = self.gas_coords_arr[gas_mask,:] #multicolumn
+         self.star_coords_arr = self.star_coords_arr[star_mask,:] #multicolumn
+         self.star_mass_arr = self.star_mass_arr[star_mask]
+         self.star_age_Myr_arr = self.star_age_Myr_arr[star_mask]
+        # #self.HIIregion_delay_time  = data.HIIregion_delay_time[mask]
+         print("FILTERED BASED ON DISTANCE. N_star =", len(self.star_mass_arr), 'LENGTH OF STAR_AGE ARR =', len(self.star_age_Myr_arr))
+
+         return
 
 
 
