@@ -560,6 +560,7 @@ def main():
                 my_snapshot_data.load_GIZMO()
             elif driver_pars["snapshot_type"] == "GIZMO_MultiFile":
                 my_snapshot_data.load_GIZMO_MultiFile()
+                #my_snapshot_data.distance_filter() #niranjan
             elif driver_pars["snapshot_type"] == "AREPO": 
                 my_snapshot_data.load_AREPO() 
             elif driver_pars["snapshot_type"] == "USER": 
@@ -751,12 +752,14 @@ def main():
 
     comm.Barrier()
 
-    if driver_pars["UV_field"] == "StellarFluxes" and driver_pars["compute_stellar_fluxes"] == 1 and N_star > 0: 
+    print ('driver_pars["UV_field"] =',driver_pars["UV_field"],'driver_pars["compute_stellar_fluxes"] =', driver_pars["compute_stellar_fluxes"], 'N_star =',N_star)
+    if (driver_pars["UV_field"] == "StellarFluxes" and driver_pars["compute_stellar_fluxes"] == 1 and N_star > 0): 
         # Broadcast all star particles to all MPI tasks 
         star_coords_arr = comm.bcast(star_coords_arr, root = 0) 
         star_mass_arr = comm.bcast(star_mass_arr, root = 0) 
         star_age_Myr_arr = comm.bcast(star_age_Myr_arr, root = 0) 
-
+        #niranjan 2021: adding following print statement 
+        print ("inside IF condition")
         comm.Barrier()
 
         if rank == 0: 
@@ -764,7 +767,8 @@ def main():
             sys.stdout.flush()
 
         ChimesFluxIon_arr, ChimesFluxG0_arr = compute_stellar_fluxes(gas_coords_arr, star_coords_arr, star_mass_arr / solar_mass_cgs, star_age_Myr_arr, driver_pars["stellar_fluxes_fEsc_ion"], driver_pars["stellar_fluxes_fEsc_G0"], rank) 
-
+	#niranjan 2021: adding the print statement to make sure it's computed, cause "data_list_thisTask.append(ChimesFluxIon_arr)" invoking error
+        print("computing stellar fluxes on rank =", rank)
         comm.Barrier() 
 
         if rank == 0: 
@@ -774,7 +778,9 @@ def main():
     ##  create and run an instance of ChimesDriver on different MPI tasks
     ##  each task uses its own chunk of the data
     data_list_thisTask = [nH_arr, temperature_arr, metallicity_arr, shieldLength_arr, init_chem_arr] 
-    if driver_pars["UV_field"] == "StellarFluxes": 
+    if driver_pars["UV_field"] == "StellarFluxes":
+        #niranjan: adding the following line to get ChimesFluxIon_arr and ChimesFluxG0_arr
+        #ChimesFluxIon_arr, ChimesFluxG0_arr = compute_stellar_fluxes(gas_coords_arr, star_coords_arr, star_mass_arr / solar_mass_cgs, star_age_Myr_arr, driver_pars["stellar_fluxes_fEsc_ion"], driver_pars["stellar_fluxes_fEsc_G0"], rank) 
         data_list_thisTask.append(ChimesFluxIon_arr) 
         data_list_thisTask.append(ChimesFluxG0_arr)
     elif driver_pars["UV_field"] == "S04" and driver_pars["IO_mode"] == "snapshot":

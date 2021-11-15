@@ -17,11 +17,6 @@ from phys_const import proton_mass_cgs, boltzmann_cgs, seconds_in_a_Myr
 from shielding_utils import compute_jeans_shield_length, compute_colibre_shield_length 
 
 
-#niranjan-2021: adding the directory and snapnum
-nofeedback_dir = '/mnt/sdceph/users/dangles/FIRE/bhfeedback/h113_HR_sn152/nof_s8e1_n128'
-snapnum = 252
-ptype = 0
-
 class SnapshotData: 
     def __init__(self, driver_pars, global_pars, gas_pars): 
         self.driver_pars = driver_pars 
@@ -241,7 +236,10 @@ class SnapshotData:
     def load_GIZMO_MultiFile(self):
 
          #with g.readsnap(nofeedback_dir, snapnum, part_type, header_only=0) as h5file:
-        
+         #niranjan-2021: adding the directory and snapnum
+         nofeedback_dir = self.driver_pars['input_dir']
+         snapnum = self.driver_pars['snapnum']
+ 
          #with h5py.File(self.driver_pars['input_file'], 'r') as h5file:
          header = g.readsnap(nofeedback_dir, snapnum, 0, header_only=1)
         

@@ -1,12 +1,14 @@
 # General Parameters 
-chimes_library_path        /home/jovyan/home/chimes/ 
-chimes_data_path           /home/jovyan/home/chimes/chimes-data 
+chimes_library_path        /mnt/home/nroy/chimes-IGNIS/libchimes.so
+chimes_data_path           /mnt/home/nroy/chimes-IGNIS/chimes-data 
 
 driver_mode                eqm_state 
 IO_mode		           snapshot 
 
-input_file 	     	   /home/jovyan/data/h113_HR_sn152/nof_s8e1_n128/snapdir_252/ 
-output_file                nof_s8e1_n128_eqm
+#input_file 	     	   /mnt/sdceph/users/dangles/FIRE/bhfeedback/h113_HR_sn152/nof_s8e1_n128/ 
+input_dir                  /mnt/sdceph/users/dangles/FIRE/bhfeedback/h113_HR_sn152/nof_s8e1_n128/ #for FIRE/IGNIS
+snapnum                    252 #for FIRE/IGNIS
+output_file                ./nof_s8e1_n128_eqm.hdf5
 snapshot_type 		   GIZMO_MultiFile 
 snapshot_chemistry_array   None 
 snapshot_flux_ion_array    ChimesFluxIon_output
