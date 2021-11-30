@@ -36,7 +36,8 @@ class SnapshotData:
         self.star_coords_arr = None 
         self.star_mass_arr = None 
         self.star_age_Myr_arr = None 
-        self.HIIregion_delay_time = None 
+        self.HIIregion_delay_time = None
+  
         
         return 
 
@@ -53,7 +54,7 @@ class SnapshotData:
             # hydrogen mass fraction XH = 0.7 
             # mean molecular weight mu = 1 
             self.shieldLength_arr = np.zeros(len(self.nH_arr), dtype = np.float64) 
-
+     
             for i in range(len(self.nH_arr)): 
                 self.shieldLength_arr[i] = compute_jeans_shield_length(self.temperature_arr[i], self.nH_arr[i], self.driver_pars["shield_length_factor"], self.driver_pars["max_shield_length"]) 
                 
@@ -68,10 +69,12 @@ class SnapshotData:
 
         # HII regions 
         if self.driver_pars["disable_shielding_in_HII_regions"] == 1: 
-            ind_HII = (self.HIIregion_delay_time > 0.0) 
+            ind_HII = (self.HIIregion_delay_time > 0.0)
             self.shieldLength_arr[ind_HII] = 1.0 
         
         return
+
+
 
     def load_GIZMO(self):
         
@@ -301,16 +304,32 @@ class SnapshotData:
          # If the simulation was run with CHIMES, we can use the mean molecular 
          # weights from the non-eqm chemical abundances to calculate the 
          # temperature. Otherwise, use mu assuming neutral gas. 
-         try: 
-             ##mmw_mu_arr = np.array(h5file['PartType0/ChimesMu']) 
-             mmw_mu_arr = load_from_snapshot('ChimesMu', 0, nofeedback_dir, snapnum)
-         except KeyError: 
+         ##try: 
+         ##    ##mmw_mu_arr = np.array(h5file['PartType0/ChimesMu']) 
+         ##    mmw_mu_arr = load_from_snapshot('ChimesMu', 0, nofeedback_dir, snapnum)
+         ##except KeyError:
+
+         mmw_mu_arr = load_from_snapshot('ChimesMu', 0, nofeedback_dir, snapnum)
+         if (np.size(mmw_mu_arr) == 1): #if 'ChimesMu' is not in the snapshot, load_from_snap will return 0, not an array
+             print ('mmw_mu_arr not found in snapshot, calculating manually...') 
+
              helium_mass_fraction = self.metallicity_arr[:,1]
+             #print('helium_mass_fraction min', np.min(helium_mass_fraction), 'helium_mass_fraction max', np.max(helium_mass_fraction))
+
              y_helium = helium_mass_fraction / (4*(1-helium_mass_fraction))
              ElectronAbundance = load_from_snapshot('ElectronAbundance', 0, nofeedback_dir, snapnum)
+             #print('ElectronAbundance min', np.min(ElectronAbundance), 'ElectronAbundance max', np.max(ElectronAbundance))
+
              mmw_mu_arr = (1.0 + 4*y_helium) / (1+y_helium+ElectronAbundance) 
 
+
          self.temperature_arr = (2.0 / 3.0) * mmw_mu_arr * proton_mass_cgs * internal_energy_arr / boltzmann_cgs 
+
+        # print ('internal_energy_arr min =', np.min(internal_energy_arr), 'internal_energy_arr max =', np.max(internal_energy_arr))
+        # print ('mmw_mu_arr min', np.min(mmw_mu_arr), 'mmw_mu_arr max', np.max(mmw_mu_arr))
+        # print ('temp min =', np.min(self.temperature_arr), 'temp max =', np.max(self.temperature_arr))
+        # print ('ElectronAbundance min =', np.min(ElectronAbundance), 'ElectronAbundance max =', np.max(ElectronAbundance))
+        # print ('helium_mass_fraction min =', np.min(helium_mass_fraction), 'helium_mass_fraction max =', np.max(helium_mass_fraction))
 
          # Read in stellar fluxes, if needed. 
          if self.driver_pars['UV_field'] == "StellarFluxes": 
@@ -417,22 +436,52 @@ class SnapshotData:
              self.gas_coords_arr = load_from_snapshot('Coordinates', 0, nofeedback_dir, snapnum) * unit_length_in_cgs 
 
          if self.driver_pars["disable_shielding_in_HII_regions"] == 1: 
-             try: 
-                 self.HIIregion_delay_time = np.array(h5file[self.driver_pars["snapshot_HIIregion_array"]]) 
-             except KeyError: 
-                 raise Exception("ERROR: could not find array %s in the snapshot." % (self.driver_pars["snapshot_HIIregion_array"], ))
+             #try: 
+             #    self.HIIregion_delay_time = load_from_snapshot('snapshot_HIIregion_array', 0, nofeedback_dir, snapnum)
+             #    #np.array(h5file[self.driver_pars["snapshot_HIIregion_array"]]) 
+             #except: 
+             #    #raise Exception("ERROR: could not find array %s in the snapshot." % (self.driver_pars["snapshot_HIIregion_array"], ))
 
+             self.HIIregion_delay_time = load_from_snapshot('snapshot_HIIregion_array', 0, nofeedback_dir, snapnum)
+
+             if (np.size(self.HIIregion_delay_time) == 1):
+                 print("could not find array %s in the snapshot, calculating manually...\n." %(self.driver_pars["snapshot_HIIregion_array"],))
+                 neutral_H = load_from_snapshot('NeutralHydrogenAbundance', 0, nofeedback_dir, snapnum)
+                 self.HII_region_selection(neutral_H)                 
+ 
          # Set the shielding length array 
          self.set_shielding_array() 
 
 
          #reading the black hole coordinates to define the center
          bh_center = load_from_snapshot('Coordinates', 5, nofeedback_dir, snapnum)
-         filtering_distance = 0.01 #kpc 
+         filtering_radius = self.driver_pars["filtering_radius"]
  
          #filtering the data within cutoff radius wrt black hole
-         self.distance_filter(bh_center, filtering_distance)
-             
+         self.distance_filter(bh_center, filtering_radius)
+         
+         '''
+         neutral_H = load_from_snapshot('NeutralHydrogenAbundance', 0, nofeedback_dir, snapnum) 
+         
+         self.HII_region_selection(neutral_H)
+         '''
+         return 
+
+    def HII_region_selection(self, neutral_H):
+         #selecting the gas particles based on the following physical conditions
+         print("self.nH_arr =",self.nH_arr)
+         print("neutral_H =",neutral_H, "lowest neutral_H =", np.min(neutral_H))
+ 
+         mask = ((self.temperature_arr > 9e3) & (self.temperature_arr < 15e3) & (self.nH_arr > 0.1) & (neutral_H == 0))
+
+         #mask = ((self.temperature_arr > 8e0) & (self.temperature_arr < 20e6))
+         print ('temp min =', np.min(self.temperature_arr), 'temp max =', np.max(self.temperature_arr))
+         print ('mask in HII_region_selection ='+str(mask))
+
+         self.HIIregion_delay_time = mask.astype(int) #saving the HII region flags in HIIregion_delay_time array as sheilding length is set where it's > 0
+         
+         print ("Shape of HIIregion_delay_time before distance filtering =", np.shape(self.HIIregion_delay_time), "non-zero items =", np.count_nonzero(self.HIIregion_delay_time))
+
          return 
 
 
@@ -471,11 +520,12 @@ class SnapshotData:
          self.star_coords_arr = self.star_coords_arr[star_mask,:] #multicolumn
          self.star_mass_arr = self.star_mass_arr[star_mask]
          self.star_age_Myr_arr = self.star_age_Myr_arr[star_mask]
-        # #self.HIIregion_delay_time  = data.HIIregion_delay_time[mask]
+         self.HIIregion_delay_time  = self.HIIregion_delay_time[gas_mask]
          print("FILTERED BASED ON DISTANCE. N_star =", len(self.star_mass_arr), 'LENGTH OF STAR_AGE ARR =', len(self.star_age_Myr_arr))
+         print("Shape of HIIregion_delay_time after distance filtering ="+ str(np.shape(self.HIIregion_delay_time)) + "NON-ZERO ELEMENTS IN HII_REGION_DELAY_TIME ="+ str(np.count_nonzero(self.HIIregion_delay_time)))
 
          return
-
+##################################################################################################
 
 
     def load_AREPO(self): 
