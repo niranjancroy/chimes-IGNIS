@@ -56,7 +56,12 @@ def compute_stellar_fluxes(gas_coords_cgs, star_coords_cgs, star_mass_Msol, star
             if idx_gas % 100 == 0:
                 print("Rank %d: Computing stellar flux for particle %d of %d" % (rank, idx_gas, Npart_gas))
                 sys.stdout.flush() 
-        
+        #niranjan 2021: adding else condition to check whats happening on other ranks
+        else:
+            if idx_gas % 100 == 0:
+                print("Rank %d: Computing stellar flux for particle %d of %d" % (rank, idx_gas, Npart_gas))
+                sys.stdout.flush() 
+
         delta_coords = np.float64((star_coords_cgs - gas_coords_cgs[idx_gas, :])) 
         star_distance_squared_cgs = (delta_coords[:, 0] ** 2.0) + (delta_coords[:, 1] ** 2.0) + (delta_coords[:, 2] ** 2.0) 
         

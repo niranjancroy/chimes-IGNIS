@@ -30,4 +30,10 @@ def compute_colibre_Nref(T, nH, XH, max_shield_length, colibre_log_T_min, colibr
 def compute_colibre_shield_length(T, nH, XH, shield_length_factor, max_shield_length, colibre_log_T_min, colibre_log_T_max): 
     N_ref = compute_colibre_Nref(T, nH, XH, max_shield_length, colibre_log_T_min, colibre_log_T_max)
 
-    return shield_length_factor * N_ref / nH 
+    return shield_length_factor * N_ref / nH
+
+
+#niranjan Dec2021: adding Sobolev shield length calculation
+def compute_sobolev_shield_length(Rho, GradientRho, InterParticleDistance):
+    ShieldLength = InterParticleDistance + (Rho/GradientRho)
+    return ShieldLength

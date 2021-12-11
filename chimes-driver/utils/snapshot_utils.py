@@ -4,6 +4,7 @@ import os
 import sys 
 sys.path.append('/mnt/home/nroy/libraries/pfh_python')
 sys.path.append('/mnt/home/nroy/libraries/daa_python')
+sys.path.append('/mnt/home/nroy/libraries/meshoid/lib/python3.8/site-packages/meshoid-1.32-py3.8.egg')
 #sys.path.append('/home/jovyan/code/utilities')
 #sys.path.append('/home/jovyan/code/gizmo_analysis')
 import gadget as g
@@ -11,6 +12,8 @@ from gizmopy.load_fire_snap import load_fire_snap #go othrough the ocde
 from gizmopy.load_from_snapshot import load_from_snapshot #go othrough the ocde
 #from daa_python import *
 from daa_constants import *
+from meshoid import *
+import matplotlib.pyplot as plt
 
 from chimes_utils import set_initial_chemistry_abundances 
 from phys_const import proton_mass_cgs, boltzmann_cgs, seconds_in_a_Myr 
@@ -37,8 +40,10 @@ class SnapshotData:
         self.star_mass_arr = None 
         self.star_age_Myr_arr = None 
         self.HIIregion_delay_time = None
-  
-        
+        #niranjan 2021: adding the following
+        self.gas_mass = None
+        self.gas_hsml = None #smoothing length
+        self.gas_density = None 
         return 
 
     def set_shielding_array(self): 
@@ -64,15 +69,30 @@ class SnapshotData:
             for i in range(len(self.nH_arr)): 
                 XH = 1.0 - (self.metallicity_arr[i, 0] + self.metallicity_arr[i, 1]) 
                 self.shieldLength_arr[i] = compute_colibre_shield_length(self.temperature_arr[i], self.nH_arr[i], XH, self.driver_pars["shield_length_factor"], self.driver_pars["max_shield_length"], self.driver_pars["colibre_log_T_min"], self.driver_pars["colibre_log_T_max"])
-        else: 
+
+
+        #niranjan Dec2021: adding Sobolev self-shielding scheme
+        elif self.driver_pars['shield_mode'] == "Sobolev":
+             self.shieldLength_arr = np.zeros(len(self.nH_arr), dtype = np.float64)             
+             M = Meshoid(self.gas_coords_arr, self.gas_mass, self.gas_hsml)
+             density_gradient = M.D(self.gas_density) #calculating density gradient using meshoid
+             print ('density gradient by meshoid = ', density_gradient)
+
+             for i in range(len(self.nH_arr)):
+                   self.shieldLength_arr[i] = compute_sobolev_shield_length(self.gas_density, density_gradient, self.gas_hsml)
+
+        else:
             raise Exception("ERROR: shield_mode %d not recognised. Aborting." % (self.driver_pars['shield_mode'], ))
 
         # HII regions 
         if self.driver_pars["disable_shielding_in_HII_regions"] == 1: 
             ind_HII = (self.HIIregion_delay_time > 0.0)
+            print('non-zero indices =', ind_HII.nonzero())
             self.shieldLength_arr[ind_HII] = 1.0 
-        
+        print ('MIN shieldLength_arr =', np.min(self.shieldLength_arr), 'MAX shieldLength_arr =', np.max(self.shieldLength_arr)) 
+
         return
+
 
 
 
@@ -275,12 +295,15 @@ class SnapshotData:
          # to total in the order: 
          # All_metals, He, C, N, O, Ne, Mg, Si, S, Ca, Fe 
          ##self.metallicity_arr = np.array(h5file['PartType0/Metallicity'])
+         self.gas_mass = load_from_snapshot( 'Masses', 0, nofeedback_dir, snapnum)
+         self.gas_hsml = load_from_snapshot( 'SmoothingLength', 0, nofeedback_dir, snapnum)
+         self.gas_density = load_from_snapshot( 'Density', 0, nofeedback_dir, snapnum)
          self.metallicity_arr = load_from_snapshot( 'Metallicity', 0, nofeedback_dir, snapnum)
 
          # Calculate nH from the density array 
          ##density_arr = np.array(h5file['PartType0/Density'])
          density_arr = load_from_snapshot( 'Density', 0, nofeedback_dir, snapnum)
-
+ 
          XH = 1.0 - (self.metallicity_arr[:, 0] + self.metallicity_arr[:, 1]) 
          self.nH_arr = (unit_mass_in_cgs / (unit_length_in_cgs ** 3)) * density_arr * XH / proton_mass_cgs
 
@@ -456,32 +479,29 @@ class SnapshotData:
          #reading the black hole coordinates to define the center
          bh_center = load_from_snapshot('Coordinates', 5, nofeedback_dir, snapnum)
          filtering_radius = self.driver_pars["filtering_radius"]
- 
+
+         #np.savetxt('Temp_array.dat', self.temperature_arr) 
+         #np.savetxt('nH_array.dat', self.nH_arr)
+         
+         #plt.figure(figsize = (4,4), dpi = 100)
+         #plt.scatter(np.log10(self.nH_arr),np.log10(self.temperature_arr), s=0.5*np.ones(np.size(self.nH_arr)), marker = ".") 
+         #plt.savefig('temp_vs_nH.png')
+         #plt.xlabel('log10(nH)')
+         #plt.ylabel('log10(Temperature)')
+         #print('Figure temp_vs_nH.png saved')
+
          #filtering the data within cutoff radius wrt black hole
          self.distance_filter(bh_center, filtering_radius)
          
-         '''
-         neutral_H = load_from_snapshot('NeutralHydrogenAbundance', 0, nofeedback_dir, snapnum) 
-         
-         self.HII_region_selection(neutral_H)
-         '''
+         print ("INDECES OF HII_REGION PARTICLES AFTER DISTANCE FILTERING : ", np.nonzero(self.HIIregion_delay_time)[0])         
+         print ("Shape of HIIregion_delay_time after distance filtering =", np.shape(self.HIIregion_delay_time), "non-zero items =", np.count_nonzero(self.HIIregion_delay_time))
+
          return 
 
     def HII_region_selection(self, neutral_H):
-         #selecting the gas particles based on the following physical conditions
-         print("self.nH_arr =",self.nH_arr)
-         print("neutral_H =",neutral_H, "lowest neutral_H =", np.min(neutral_H))
- 
+         '''selecting the gas particles based on temp~10,000 and HNumberDensity > 1 and IonizationFactor = 1'''
          mask = ((self.temperature_arr > 9e3) & (self.temperature_arr < 15e3) & (self.nH_arr > 0.1) & (neutral_H == 0))
-
-         #mask = ((self.temperature_arr > 8e0) & (self.temperature_arr < 20e6))
-         print ('temp min =', np.min(self.temperature_arr), 'temp max =', np.max(self.temperature_arr))
-         print ('mask in HII_region_selection ='+str(mask))
-
-         self.HIIregion_delay_time = mask.astype(int) #saving the HII region flags in HIIregion_delay_time array as sheilding length is set where it's > 0
-         
-         print ("Shape of HIIregion_delay_time before distance filtering =", np.shape(self.HIIregion_delay_time), "non-zero items =", np.count_nonzero(self.HIIregion_delay_time))
-
+         self.HIIregion_delay_time = mask.astype(int)
          return 
 
 
@@ -489,6 +509,7 @@ class SnapshotData:
     def distance_filter(self, center, radius):
          ''' 'center' is the central coordinate, 'radius' is the radius of desired region in kpc. 
          IMPORTANT::When the black will be used as an ionization source, we need to convert its coordinate to be ZERO'''
+
          unit_length_in_cgs = self.driver_pars["snapshot_unitLength_cgs"]
          
          radius *= unit_length_in_cgs  #converting radius into CGS unit cm
@@ -498,33 +519,33 @@ class SnapshotData:
          self.star_coords_arr -= center
 
          #creating mask for gas particles
-         #relative_cord_gas = self.gas_coords_arr - center
-         #R_gas = np.sqrt((relative_cord_gas * relative_cord_gas).sum(axis=1))
          R_gas = np.sqrt((self.gas_coords_arr * self.gas_coords_arr).sum(axis=1))
          gas_mask = R_gas < radius
 
-         print("Radius =", radius)
          #creating mask for star particles
-         #relative_cord_star = self.star_coords_arr - center
-         #R_star = np.sqrt((relative_cord_star * relative_cord_star).sum(axis=1))
          R_star = np.sqrt((self.star_coords_arr * self.star_coords_arr).sum(axis=1))
          star_mask = R_star < radius
-
-         print("nonzero elements in Star_mask = ",np.count_nonzero(star_mask), "R_star =", R_star, "nonzero elements in gas_mask = ", np.count_nonzero(gas_mask))
+    
          #applying the masks. If property has more than one column, applying mask just on the number of particles
          self.metallicity_arr = self.metallicity_arr[gas_mask,:] #multicolumn
          self.nH_arr = self.nH_arr[gas_mask]
          self.init_chem_arr = self.init_chem_arr[gas_mask,:] #multicolumn
          self.temperature_arr = self.temperature_arr[gas_mask]
          self.gas_coords_arr = self.gas_coords_arr[gas_mask,:] #multicolumn
+         self.gas_mass = self.gas_mass[gas_mask]
+         self.gas_density = self.gas_density[gas_mask]
+         self.gas_hsml = self.gas_hsml[gas_mask]
          self.star_coords_arr = self.star_coords_arr[star_mask,:] #multicolumn
          self.star_mass_arr = self.star_mass_arr[star_mask]
          self.star_age_Myr_arr = self.star_age_Myr_arr[star_mask]
-         self.HIIregion_delay_time  = self.HIIregion_delay_time[gas_mask]
-         print("FILTERED BASED ON DISTANCE. N_star =", len(self.star_mass_arr), 'LENGTH OF STAR_AGE ARR =', len(self.star_age_Myr_arr))
-         print("Shape of HIIregion_delay_time after distance filtering ="+ str(np.shape(self.HIIregion_delay_time)) + "NON-ZERO ELEMENTS IN HII_REGION_DELAY_TIME ="+ str(np.count_nonzero(self.HIIregion_delay_time)))
+
+         if (self.driver_pars["disable_shielding_in_HII_regions"] == 1) : 
+             self.HIIregion_delay_time  = self.HIIregion_delay_time[gas_mask]
+
+         print ('Applied Distance Filter')         
 
          return
+
 ##################################################################################################
 
 
