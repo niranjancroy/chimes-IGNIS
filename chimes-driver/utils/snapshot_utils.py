@@ -76,10 +76,10 @@ class SnapshotData:
              self.shieldLength_arr = np.zeros(len(self.nH_arr), dtype = np.float64)             
              M = Meshoid(self.gas_coords_arr, self.gas_mass, self.gas_hsml)
              density_gradient = M.D(self.gas_density) #calculating density gradient using meshoid
-             print ('density gradient by meshoid = ', density_gradient)
-
+             density_gradient_magnitude = np.sqrt((density_gradient * density_gradient).sum(axis=1))
+             #print ('density gradient by meshoid = ', density_gradient)
              for i in range(len(self.nH_arr)):
-                   self.shieldLength_arr[i] = compute_sobolev_shield_length(self.gas_density, density_gradient, self.gas_hsml)
+                   self.shieldLength_arr[i] = compute_sobolev_shield_length(self.gas_density, density_gradient_magnitude, self.gas_hsml)
 
         else:
             raise Exception("ERROR: shield_mode %d not recognised. Aborting." % (self.driver_pars['shield_mode'], ))
@@ -295,9 +295,9 @@ class SnapshotData:
          # to total in the order: 
          # All_metals, He, C, N, O, Ne, Mg, Si, S, Ca, Fe 
          ##self.metallicity_arr = np.array(h5file['PartType0/Metallicity'])
-         self.gas_mass = load_from_snapshot( 'Masses', 0, nofeedback_dir, snapnum)
-         self.gas_hsml = load_from_snapshot( 'SmoothingLength', 0, nofeedback_dir, snapnum)
-         self.gas_density = load_from_snapshot( 'Density', 0, nofeedback_dir, snapnum)
+         self.gas_mass = unit_mass_in_cgs * load_from_snapshot( 'Masses', 0, nofeedback_dir, snapnum)
+         self.gas_hsml = unit_length_in_cgs * load_from_snapshot( 'SmoothingLength', 0, nofeedback_dir, snapnum)
+         self.gas_density = (unit_mass_in_cgs / (unit_length_in_cgs ** 3)) *  load_from_snapshot( 'Density', 0, nofeedback_dir, snapnum)
          self.metallicity_arr = load_from_snapshot( 'Metallicity', 0, nofeedback_dir, snapnum)
 
          # Calculate nH from the density array 
@@ -472,26 +472,22 @@ class SnapshotData:
                  neutral_H = load_from_snapshot('NeutralHydrogenAbundance', 0, nofeedback_dir, snapnum)
                  self.HII_region_selection(neutral_H)                 
  
+         #reading the black hole coordinates to define the center
+         bh_center = load_from_snapshot('Coordinates', 5, nofeedback_dir, snapnum)
+         filtering_radius = self.driver_pars["filtering_radius"]
+
+         self.distance_filter(bh_center, filtering_radius)
+
          # Set the shielding length array 
          self.set_shielding_array() 
 
 
          #reading the black hole coordinates to define the center
-         bh_center = load_from_snapshot('Coordinates', 5, nofeedback_dir, snapnum)
-         filtering_radius = self.driver_pars["filtering_radius"]
-
-         #np.savetxt('Temp_array.dat', self.temperature_arr) 
-         #np.savetxt('nH_array.dat', self.nH_arr)
-         
-         #plt.figure(figsize = (4,4), dpi = 100)
-         #plt.scatter(np.log10(self.nH_arr),np.log10(self.temperature_arr), s=0.5*np.ones(np.size(self.nH_arr)), marker = ".") 
-         #plt.savefig('temp_vs_nH.png')
-         #plt.xlabel('log10(nH)')
-         #plt.ylabel('log10(Temperature)')
-         #print('Figure temp_vs_nH.png saved')
+         ##bh_center = load_from_snapshot('Coordinates', 5, nofeedback_dir, snapnum)
+         ##filtering_radius = self.driver_pars["filtering_radius"] 
 
          #filtering the data within cutoff radius wrt black hole
-         self.distance_filter(bh_center, filtering_radius)
+         ##self.distance_filter(bh_center, filtering_radius)
          
          print ("INDECES OF HII_REGION PARTICLES AFTER DISTANCE FILTERING : ", np.nonzero(self.HIIregion_delay_time)[0])         
          print ("Shape of HIIregion_delay_time after distance filtering =", np.shape(self.HIIregion_delay_time), "non-zero items =", np.count_nonzero(self.HIIregion_delay_time))
