@@ -1,5 +1,8 @@
 import numpy as np
 import sys
+sys.path.append('/mnt/home/nroy/pytreegrav/lib/python3.8/site-packages/pytreegrav-1.0-py3.8.egg')
+import pytreegrav as ptg
+
 
 # Stellar luminosity per stellar mass in 
 # the 6-13.6 eV band as a function of 
@@ -30,7 +33,7 @@ def stellar_luminosity_ion(stellar_age_Myr):
 
     incl_second = ~incl_first 
     output_array[incl_second] = 3.3e21 * ((6.89e5 / np.float64(stellar_age_Myr[incl_second])) ** 4.79) * ((1.0 + ((np.float64(stellar_age_Myr[incl_second]) / 6.89e5) ** 1.12)) ** (-1.7e4))  
-
+    #print('stellar_luminosity_ion MIN = {}, MAX = {}'.format(np.min(output_array), np.max(output_array))) #niranjan
     return output_array 
 
 # Upper bounds of the stellar age bins 
@@ -55,12 +58,7 @@ def compute_stellar_fluxes(gas_coords_cgs, star_coords_cgs, star_mass_Msol, star
         if rank == 0:
             if idx_gas % 100 == 0:
                 print("Rank %d: Computing stellar flux for particle %d of %d" % (rank, idx_gas, Npart_gas))
-                sys.stdout.flush() 
-        #niranjan 2021: adding else condition to check whats happening on other ranks
-        else:
-            if idx_gas % 100 == 0:
-                print("Rank %d: Computing stellar flux for particle %d of %d" % (rank, idx_gas, Npart_gas))
-                sys.stdout.flush() 
+                sys.stdout.flush()  
 
         delta_coords = np.float64((star_coords_cgs - gas_coords_cgs[idx_gas, :])) 
         star_distance_squared_cgs = (delta_coords[:, 0] ** 2.0) + (delta_coords[:, 1] ** 2.0) + (delta_coords[:, 2] ** 2.0) 
@@ -73,15 +71,57 @@ def compute_stellar_fluxes(gas_coords_cgs, star_coords_cgs, star_mass_Msol, star
             else: 
                 star_incl = ((log_star_age_Myr <= log_stellar_age_Myr_bin_upper[idx_age]) & (log_star_age_Myr > log_stellar_age_Myr_bin_upper[idx_age - 1])) 
 
-            star_L_ion = fEsc_ion * stellar_luminosity_ion(star_age_Myr[star_incl]) * star_mass_Msol[star_incl] 
+            star_L_ion = fEsc_ion * stellar_luminosity_ion(star_age_Myr[star_incl]) * star_mass_Msol[star_incl]  
             star_L_G0 = fEsc_G0 * stellar_luminosity_G0(star_age_Myr[star_incl]) * star_mass_Msol[star_incl] 
-
+            
             one_over_r2 = 1.0 / star_distance_squared_cgs[star_incl]
 
             ChimesFluxIon[idx_gas, idx_age] = np.sum(star_L_ion * one_over_r2) / (4.0 * np.pi)
             ChimesFluxG0[idx_gas, idx_age] = np.sum(star_L_G0 * one_over_r2) / (4.0 * np.pi)
-
+ 
+            
     return np.float32(ChimesFluxIon), np.float32(ChimesFluxG0) 
+
+
+def compute_stellar_fluxes_tree(gas_coords_cgs, star_coords_cgs, star_mass_Msol, star_age_Myr, fEsc_ion, fEsc_G0, rank):
+    Npart_gas = len(gas_coords_cgs)
+    Npart_star = len(star_coords_cgs)
+
+    ChimesFluxIon = np.zeros((Npart_gas, len(log_stellar_age_Myr_bin_upper) + 1), dtype = np.float32)
+    ChimesFluxG0 = np.zeros((Npart_gas, len(log_stellar_age_Myr_bin_upper) + 1), dtype = np.float32)
+ 
+    log_star_age_Myr = np.log10(star_age_Myr)
+
+    for idx_age in range(len(log_stellar_age_Myr_bin_upper) + 1):
+            if idx_age == 0:
+                star_incl = (log_star_age_Myr <= log_stellar_age_Myr_bin_upper[idx_age])
+            elif idx_age == len(log_stellar_age_Myr_bin_upper):
+                star_incl = (log_star_age_Myr > log_stellar_age_Myr_bin_upper[idx_age - 1])
+            else:
+                star_incl = ((log_star_age_Myr <= log_stellar_age_Myr_bin_upper[idx_age]) & (log_star_age_Myr > log_stellar_age_Myr_bin_upper[idx_age - 1]))
+
+            star_L_ion = fEsc_ion * stellar_luminosity_ion(star_age_Myr[star_incl]) * star_mass_Msol[star_incl]
+            #print('stellar_luminosity_ion TREE MIN = {}, MAX = {}'.format(np.min(star_L_ion), np.max(star_L_ion))) #niranjan
+            star_L_G0 = fEsc_G0 * stellar_luminosity_G0(star_age_Myr[star_incl]) * star_mass_Msol[star_incl]
+            #print('stellar_luminosity_G0 TREE MIN = {}, MAX = {}'.format(np.min(star_L_G0), np.max(star_L_G0))) #niranjan
+            if np.size(star_L_ion) < 1:
+                 print('SIZE OF star_L_ion IS ZERO')
+                 print('SIZE OF star_L_G0 IS {}', format(np.size(star_L_G0)))
+                 ChimesFluxIon[:, idx_age] = np.zeros(Npart_gas) 
+                 ChimesFluxG0[:, idx_age] = np.zeros(Npart_gas)         
+            else:
+                 fluxes_ion = ptg.AccelTarget(gas_coords_cgs, star_coords_cgs[star_incl], star_L_ion, softening_target=None, softening_source=None, G=1./(4*np.pi), theta=.7, tree=None, return_tree=False, parallel=True, method='tree', quadrupole=False)
+     
+                 fluxes_G0 = ptg.AccelTarget(gas_coords_cgs, star_coords_cgs[star_incl], star_L_G0, softening_target=None, softening_source=None, G=1./(4*np.pi), theta=.7, tree=None, return_tree=False, parallel=True, method='tree', quadrupole=False)
+       
+                 ChimesFluxIon[:, idx_age] = np.sqrt((fluxes_ion * fluxes_ion).sum(axis=1))
+                 ChimesFluxG0[:, idx_age] = np.sqrt((fluxes_G0 * fluxes_G0).sum(axis=1))
+
+            #print('ChimesFluxIon TREE MIN = {}, MAX = {}'.format(np.min(ChimesFluxIon), np.max(ChimesFluxIon))) #niranjan
+            #print('ChimesFluxG0 TREE MIN = {}, MAX = {}'.format(np.min(ChimesFluxG0), np.max(ChimesFluxG0))) #niranjan
+    return np.float32(ChimesFluxIon), np.float32(ChimesFluxG0)
+
+
 
 # Calculate ISRF and cr_rate 
 # for the COLIBRE model 
