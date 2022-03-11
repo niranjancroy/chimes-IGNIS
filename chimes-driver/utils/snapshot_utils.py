@@ -2,6 +2,7 @@ import h5py
 import numpy as np 
 import os
 import sys 
+import time
 sys.path.append('/mnt/home/nroy/libraries/pfh_python')
 sys.path.append('/mnt/home/nroy/libraries/daa_python')
 sys.path.append('/mnt/home/nroy/libraries/meshoid/lib/python3.8/site-packages/meshoid-1.32-py3.8.egg')
@@ -17,7 +18,7 @@ import matplotlib.pyplot as plt
 
 from chimes_utils import set_initial_chemistry_abundances 
 from phys_const import proton_mass_cgs, boltzmann_cgs, seconds_in_a_Myr 
-from shielding_utils import compute_jeans_shield_length, compute_colibre_shield_length 
+from shielding_utils import compute_jeans_shield_length, compute_colibre_shield_length, compute_sobolev_shield_length 
 
 
 class SnapshotData: 
@@ -73,13 +74,15 @@ class SnapshotData:
 
         #niranjan Dec2021: adding Sobolev self-shielding scheme
         elif self.driver_pars['shield_mode'] == "Sobolev":
-             self.shieldLength_arr = np.zeros(len(self.nH_arr), dtype = np.float64)             
+             self.shieldLength_arr = np.zeros(len(self.nH_arr), dtype = np.float64)     
+             print("Meshoid calculating density gradient...")        
+             print("Shape of Coord, Mass, HSML array = ", np.shape(self.gas_coords_arr), np.shape(self.gas_mass), np.shape(self.gas_hsml))
              M = Meshoid(self.gas_coords_arr, self.gas_mass, self.gas_hsml)
              density_gradient = M.D(self.gas_density) #calculating density gradient using meshoid
-             density_gradient_magnitude = np.sqrt((density_gradient * density_gradient).sum(axis=1))
-             #print ('density gradient by meshoid = ', density_gradient)
+             density_gradient_magnitude = np.sqrt((density_gradient * density_gradient).sum(axis=1))       
+             print("Density gradient calc done. Calculating Sobolev Shielding length...")      
              for i in range(len(self.nH_arr)):
-                   self.shieldLength_arr[i] = compute_sobolev_shield_length(self.gas_density, density_gradient_magnitude, self.gas_hsml)
+                   self.shieldLength_arr[i] = compute_sobolev_shield_length(self.gas_density[i], density_gradient_magnitude[i], self.gas_hsml[i])
 
         else:
             raise Exception("ERROR: shield_mode %d not recognised. Aborting." % (self.driver_pars['shield_mode'], ))
@@ -257,14 +260,19 @@ class SnapshotData:
 ##################################################################################################
 
     def load_GIZMO_MultiFile(self):
-
-         #with g.readsnap(nofeedback_dir, snapnum, part_type, header_only=0) as h5file:
+ 
+         #with g.readsnap(input_dir, snapnum, part_type, header_only=0) as h5file:
          #niranjan-2021: adding the directory and snapnum
-         nofeedback_dir = self.driver_pars['input_dir']
-         snapnum = self.driver_pars['snapnum']
+         input_file = self.driver_pars['input_file']
+
+         LastSlash = input_file.rindex('/')
+         input_dir = input_file[:LastSlash+1:]
+         
+         LastUnderscore = input_file.rindex('_')
+         snapnum  = int(input_file[LastUnderscore+1:]) 
  
          #with h5py.File(self.driver_pars['input_file'], 'r') as h5file:
-         header = g.readsnap(nofeedback_dir, snapnum, 0, header_only=1)
+         header = g.readsnap(input_dir, snapnum, 0, header_only=1)
         
          # Define unit conversions. 
          #hubble = h5file['Header'].attrs['HubbleParam']
@@ -295,14 +303,14 @@ class SnapshotData:
          # to total in the order: 
          # All_metals, He, C, N, O, Ne, Mg, Si, S, Ca, Fe 
          ##self.metallicity_arr = np.array(h5file['PartType0/Metallicity'])
-         self.gas_mass = unit_mass_in_cgs * load_from_snapshot( 'Masses', 0, nofeedback_dir, snapnum)
-         self.gas_hsml = unit_length_in_cgs * load_from_snapshot( 'SmoothingLength', 0, nofeedback_dir, snapnum)
-         self.gas_density = (unit_mass_in_cgs / (unit_length_in_cgs ** 3)) *  load_from_snapshot( 'Density', 0, nofeedback_dir, snapnum)
-         self.metallicity_arr = load_from_snapshot( 'Metallicity', 0, nofeedback_dir, snapnum)
+         self.gas_mass = unit_mass_in_cgs * load_from_snapshot( 'Masses', 0, input_dir, snapnum)
+         self.gas_hsml = unit_length_in_cgs * load_from_snapshot( 'SmoothingLength', 0, input_dir, snapnum)
+         self.gas_density = (unit_mass_in_cgs / (unit_length_in_cgs ** 3)) *  load_from_snapshot( 'Density', 0, input_dir, snapnum)
+         self.metallicity_arr = load_from_snapshot( 'Metallicity', 0, input_dir, snapnum)
 
          # Calculate nH from the density array 
          ##density_arr = np.array(h5file['PartType0/Density'])
-         density_arr = load_from_snapshot( 'Density', 0, nofeedback_dir, snapnum)
+         density_arr = load_from_snapshot( 'Density', 0, input_dir, snapnum)
  
          XH = 1.0 - (self.metallicity_arr[:, 0] + self.metallicity_arr[:, 1]) 
          self.nH_arr = (unit_mass_in_cgs / (unit_length_in_cgs ** 3)) * density_arr * XH / proton_mass_cgs
@@ -314,14 +322,14 @@ class SnapshotData:
          else: 
              try: 
                  ##self.init_chem_arr = np.array(h5file[self.driver_pars["snapshot_chemistry_array"]]) 
-                 self.init_chem_arr = load_from_snapshot( 'snapshot_chemistry_array', 0, nofeedback_dir, snapnum)
+                 self.init_chem_arr = load_from_snapshot( 'snapshot_chemistry_array', 0, input_dir, snapnum)
              except KeyError: 
                  raise Exception("ERROR: Chemistry array not found. The %s array is not present in the snapshot." % (self.driver_pars["snapshot_chemistry_array"], )) 
 
          # Calculate temperature from 
          # the internal energy array                     
          ##internal_energy_arr = np.array(h5file['PartType0/InternalEnergy']) 
-         internal_energy_arr = load_from_snapshot( 'InternalEnergy', 0, nofeedback_dir, snapnum)
+         internal_energy_arr = load_from_snapshot( 'InternalEnergy', 0, input_dir, snapnum)
          internal_energy_arr *= unit_internal_energy_in_cgs   # cgs 
 
          # If the simulation was run with CHIMES, we can use the mean molecular 
@@ -329,10 +337,10 @@ class SnapshotData:
          # temperature. Otherwise, use mu assuming neutral gas. 
          ##try: 
          ##    ##mmw_mu_arr = np.array(h5file['PartType0/ChimesMu']) 
-         ##    mmw_mu_arr = load_from_snapshot('ChimesMu', 0, nofeedback_dir, snapnum)
+         ##    mmw_mu_arr = load_from_snapshot('ChimesMu', 0, input_dir, snapnum)
          ##except KeyError:
 
-         mmw_mu_arr = load_from_snapshot('ChimesMu', 0, nofeedback_dir, snapnum)
+         mmw_mu_arr = load_from_snapshot('ChimesMu', 0, input_dir, snapnum)
          if (np.size(mmw_mu_arr) == 1): #if 'ChimesMu' is not in the snapshot, load_from_snap will return 0, not an array
              print ('mmw_mu_arr not found in snapshot, calculating manually...') 
 
@@ -340,7 +348,7 @@ class SnapshotData:
              #print('helium_mass_fraction min', np.min(helium_mass_fraction), 'helium_mass_fraction max', np.max(helium_mass_fraction))
 
              y_helium = helium_mass_fraction / (4*(1-helium_mass_fraction))
-             ElectronAbundance = load_from_snapshot('ElectronAbundance', 0, nofeedback_dir, snapnum)
+             ElectronAbundance = load_from_snapshot('ElectronAbundance', 0, input_dir, snapnum)
              #print('ElectronAbundance min', np.min(ElectronAbundance), 'ElectronAbundance max', np.max(ElectronAbundance))
 
              mmw_mu_arr = (1.0 + 4*y_helium) / (1+y_helium+ElectronAbundance) 
@@ -370,7 +378,7 @@ class SnapshotData:
                  # Read in the star and gas particle data 
                  # needed to compute stellar fluxes. 
                  ##self.gas_coords_arr = np.array(h5file['PartType0/Coordinates']) * unit_length_in_cgs 
-                 self.gas_coords_arr = load_from_snapshot('Coordinates', 0, nofeedback_dir, snapnum) * unit_length_in_cgs 
+                 self.gas_coords_arr = load_from_snapshot('Coordinates', 0, input_dir, snapnum) * unit_length_in_cgs 
 
                  if self.driver_pars["snapshot_cosmo_flag"] == 0: 
                      ##time_Myr = h5file['Header'].attrs['Time'] * unit_time_in_cgs / seconds_in_a_Myr
@@ -378,13 +386,13 @@ class SnapshotData:
 
                      try:
                          ##coords_type4 = np.array(h5file['PartType4/Coordinates']) * unit_length_in_cgs
-                         coords_type4 = load_from_snapshot('Coordinates', 4, nofeedback_dir, snapnum) * unit_length_in_cgs
+                         coords_type4 = load_from_snapshot('Coordinates', 4, input_dir, snapnum) * unit_length_in_cgs
 
                          ##mass_type4 = np.array(h5file['PartType4/Masses']) * unit_mass_in_cgs
-                         mass_type4 = load_from_snapshot('Masses', 4, nofeedback_dir, snapnum) * unit_mass_in_cgs
+                         mass_type4 = load_from_snapshot('Masses', 4, input_dir, snapnum) * unit_mass_in_cgs
 
                          ##age_type4 = time_Myr - (np.array(h5file['PartType4/StellarFormationTime']) * unit_time_in_cgs / seconds_in_a_Myr) 
-                         age_type4 = time_Myr - (load_from_snapshot('StellarFormationTime', 4, nofeedback_dir, snapnum) * unit_time_in_cgs / seconds_in_a_Myr )
+                         age_type4 = time_Myr - (load_from_snapshot('StellarFormationTime', 4, input_dir, snapnum) * unit_time_in_cgs / seconds_in_a_Myr )
 
                          self.star_coords_arr = coords_type4
                          self.star_mass_arr = mass_type4
@@ -400,9 +408,9 @@ class SnapshotData:
                          ##coords_type2 = np.array(h5file['PartType2/Coordinates']) * unit_length_in_cgs
                          ##mass_type2 = np.array(h5file['PartType2/Masses']) * unit_mass_in_cgs
                          ##age_type2 = time_Myr - (np.array(h5file['PartType2/StellarFormationTime']) * unit_time_in_cgs / seconds_in_a_Myr)
-                         coords_type2 = load_from_snapshot('Coordinates', 2, nofeedback_dir, snapnum) * unit_length_in_cgs
-                         mass_type2 = load_from_snapshot('Masses', 2, nofeedback_dir, snapnum) * unit_mass_in_cgs
-                         age_type2 = time_Myr - (load_from_snapshot('StellarFormationTime', 2, nofeedback_dir, snapnum) * unit_time_in_cgs / seconds_in_a_Myr )
+                         coords_type2 = load_from_snapshot('Coordinates', 2, input_dir, snapnum) * unit_length_in_cgs
+                         mass_type2 = load_from_snapshot('Masses', 2, input_dir, snapnum) * unit_mass_in_cgs
+                         age_type2 = time_Myr - (load_from_snapshot('StellarFormationTime', 2, input_dir, snapnum) * unit_time_in_cgs / seconds_in_a_Myr )
 
                          self.star_coords_arr = np.concatenate((self.star_coords_arr, coords_type2)) 
                          self.star_mass_arr = np.concatenate((self.star_mass_arr, mass_type2)) 
@@ -415,9 +423,9 @@ class SnapshotData:
                          ##coords_type3 = np.array(h5file['PartType3/Coordinates']) * unit_length_in_cgs
                          ##mass_type3 = np.array(h5file['PartType3/Masses']) * unit_mass_in_cgs
                          ##age_type3 = time_Myr - (np.array(h5file['PartType3/StellarFormationTime']) * unit_time_in_cgs / seconds_in_a_Myr)
-                         coords_type3 = load_from_snapshot('Coordinates', 3, nofeedback_dir, snapnum) * unit_length_in_cgs
-                         mass_type3 = load_from_snapshot('Masses', 3, nofeedback_dir, snapnum) * unit_mass_in_cgs
-                         age_type3 = time_Myr - (load_from_snapshot('StellarFormationTime', 3, nofeedback_dir, snapnum) * unit_time_in_cgs / seconds_in_a_Myr )
+                         coords_type3 = load_from_snapshot('Coordinates', 3, input_dir, snapnum) * unit_length_in_cgs
+                         mass_type3 = load_from_snapshot('Masses', 3, input_dir, snapnum) * unit_mass_in_cgs
+                         age_type3 = time_Myr - (load_from_snapshot('StellarFormationTime', 3, input_dir, snapnum) * unit_time_in_cgs / seconds_in_a_Myr )
 
                          self.star_coords_arr = np.concatenate((self.star_coords_arr, coords_type3)) 
                          self.star_mass_arr = np.concatenate((self.star_mass_arr, mass_type3)) 
@@ -432,14 +440,14 @@ class SnapshotData:
                      H0_cgs = hubble * 3.2407789e-18            # Convert HubbleParam (in 100 km/s/Mpc) to s^-1 
                      
                      try: 
-                         #self.star_coords_arr = np.concatenate((self.star_coords_arr, load_from_snapshot('Coordinates', 4, nofeedback_dir, snapnum) * unit_length_in_cgs)) 
-                         self.star_coords_arr = load_from_snapshot('Coordinates', 4, nofeedback_dir, snapnum) * unit_length_in_cgs
+                         #self.star_coords_arr = np.concatenate((self.star_coords_arr, load_from_snapshot('Coordinates', 4, input_dir, snapnum) * unit_length_in_cgs)) 
+                         self.star_coords_arr = load_from_snapshot('Coordinates', 4, input_dir, snapnum) * unit_length_in_cgs
                          
-                         #self.star_mass_arr = np.concatenate((self.star_mass_arr, load_from_snapshot('Masses', 4, nofeedback_dir, snapnum) * unit_mass_in_cgs)) 
-                         self.star_mass_arr = load_from_snapshot('Masses', 4, nofeedback_dir, snapnum) * unit_mass_in_cgs
+                         #self.star_mass_arr = np.concatenate((self.star_mass_arr, load_from_snapshot('Masses', 4, input_dir, snapnum) * unit_mass_in_cgs)) 
+                         self.star_mass_arr = load_from_snapshot('Masses', 4, input_dir, snapnum) * unit_mass_in_cgs
                          
                          #a_form = np.array(h5file['PartType4/StellarFormationTime'])
-                         a_form = load_from_snapshot('StellarFormationTime', 4, nofeedback_dir, snapnum) 
+                         a_form = load_from_snapshot('StellarFormationTime', 4, input_dir, snapnum) 
                          x_form = (omega0 / (1.0 - omega0)) / (a_form ** 3.0) 
                          x_now = (omega0 / (1.0 - omega0)) / (expansion_factor ** 3.0) 
 
@@ -456,24 +464,24 @@ class SnapshotData:
              else: 
                  raise Exception("compute_stellar_fluxes == %d not recognised. Aborting." % (self.driver_pars["compute_stellar_fluxes"], )) 
          elif self.driver_pars["UV_field"] == "S04": 
-             self.gas_coords_arr = load_from_snapshot('Coordinates', 0, nofeedback_dir, snapnum) * unit_length_in_cgs 
+             self.gas_coords_arr = load_from_snapshot('Coordinates', 0, input_dir, snapnum) * unit_length_in_cgs 
 
          if self.driver_pars["disable_shielding_in_HII_regions"] == 1: 
              #try: 
-             #    self.HIIregion_delay_time = load_from_snapshot('snapshot_HIIregion_array', 0, nofeedback_dir, snapnum)
+             #    self.HIIregion_delay_time = load_from_snapshot('snapshot_HIIregion_array', 0, input_dir, snapnum)
              #    #np.array(h5file[self.driver_pars["snapshot_HIIregion_array"]]) 
              #except: 
              #    #raise Exception("ERROR: could not find array %s in the snapshot." % (self.driver_pars["snapshot_HIIregion_array"], ))
 
-             self.HIIregion_delay_time = load_from_snapshot('snapshot_HIIregion_array', 0, nofeedback_dir, snapnum)
+             self.HIIregion_delay_time = load_from_snapshot('snapshot_HIIregion_array', 0, input_dir, snapnum)
 
              if (np.size(self.HIIregion_delay_time) == 1):
                  print("could not find array %s in the snapshot, calculating manually...\n." %(self.driver_pars["snapshot_HIIregion_array"],))
-                 neutral_H = load_from_snapshot('NeutralHydrogenAbundance', 0, nofeedback_dir, snapnum)
+                 neutral_H = load_from_snapshot('NeutralHydrogenAbundance', 0, input_dir, snapnum)
                  self.HII_region_selection(neutral_H)                 
  
          #reading the black hole coordinates to define the center
-         bh_center = load_from_snapshot('Coordinates', 5, nofeedback_dir, snapnum)
+         bh_center = load_from_snapshot('Coordinates', 5, input_dir, snapnum)
          filtering_radius = self.driver_pars["filtering_radius"]
 
          self.distance_filter(bh_center, filtering_radius)
@@ -483,7 +491,7 @@ class SnapshotData:
 
 
          #reading the black hole coordinates to define the center
-         ##bh_center = load_from_snapshot('Coordinates', 5, nofeedback_dir, snapnum)
+         ##bh_center = load_from_snapshot('Coordinates', 5, input_dir, snapnum)
          ##filtering_radius = self.driver_pars["filtering_radius"] 
 
          #filtering the data within cutoff radius wrt black hole
