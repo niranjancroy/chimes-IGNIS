@@ -6,8 +6,8 @@ driver_mode                eqm_state
 IO_mode		           snapshot 
 
 input_file 	     	   /mnt/sdceph/users/dangles/FIRE/bhfeedback/h113_HR_sn152/nof_s8e1_n128/snapdir_252 
-output_file                ./out_z2_radius_0p05kpc_Sobolev_treeFlux.hdf5
-snapshot_type 		   GIZMO_MultiFile #niranjan
+output_file                ./out_z2_radius_2kpc_Jeans_TREE.hdf5
+snapshot_type 		   GIZMO_MultiFile
 snapshot_chemistry_array   None 
 snapshot_flux_ion_array    ChimesFluxIon_output
 snapshot_flux_G0_array     ChimesFluxG0_output
@@ -16,19 +16,18 @@ snapshot_unitMass_cgs	   1.989e43
 snapshot_unitLength_cgs    3.0857e21 
 snapshot_unitVelocity_cgs  1.0e5 
 
-compute_stellar_fluxes     1 
-flux_using_tree            1 #niranjan
+compute_stellar_fluxes     2 # '1'-Chimes default; '2'-Using Tree; '3'-Using faster bruteforce
 stellar_fluxes_fEsc_ion    0.05 
 stellar_fluxes_fEsc_G0     0.1 
 
 UV_field                   StellarFluxes
-shield_mode                Sobolev #Jeans
+shield_mode                Jeans #Sobolev 
 dust_depletion             DC16 
 
 #distance based filtering. 
-filtering_radius           0.05 #kpc #niranjan
-disable_shielding_in_HII_regions 1 #1 or 0 #niranjan
-redshift                   2 #niranjan: previosly 0
+filtering_radius           2 #kpc 
+disable_shielding_in_HII_regions 1 #1 or 0
+redshift                   2 
 
 
 
