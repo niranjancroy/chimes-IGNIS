@@ -35,5 +35,5 @@ def compute_colibre_shield_length(T, nH, XH, shield_length_factor, max_shield_le
 
 #niranjan Dec2021: adding Sobolev shield length calculation
 def compute_sobolev_shield_length(Rho, GradientRho, InterParticleDistance):
-    ShieldLength = InterParticleDistance + (Rho/GradientRho)
+    ShieldLength = 0.5 * ( InterParticleDistance + (Rho/GradientRho)) #according to eqn in Richings 2018a
     return ShieldLength

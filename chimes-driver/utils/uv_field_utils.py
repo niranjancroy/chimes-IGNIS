@@ -1,8 +1,10 @@
 import numpy as np
 import sys
-sys.path.append('/mnt/home/nroy/pytreegrav/lib/python3.8/site-packages/pytreegrav-1.0-py3.8.egg')
-import pytreegrav as ptg
-
+import imp
+#sys.path.append('/mnt/home/nroy/anaconda3/lib/python3.8/site-packages/pytreegrav-1.0-py3.8.egg')
+#import pytreegrav as ptg
+from .tree_utils import FluxTarget_bruteforce, FluxTarget_tree
+#imp.reload(ptg)
 
 # Stellar luminosity per stellar mass in 
 # the 6-13.6 eV band as a function of 
@@ -61,6 +63,7 @@ def compute_stellar_fluxes(gas_coords_cgs, star_coords_cgs, star_mass_Msol, star
                 sys.stdout.flush()  
 
         delta_coords = np.float64((star_coords_cgs - gas_coords_cgs[idx_gas, :])) 
+       
         star_distance_squared_cgs = (delta_coords[:, 0] ** 2.0) + (delta_coords[:, 1] ** 2.0) + (delta_coords[:, 2] ** 2.0) 
         
         for idx_age in range(len(log_stellar_age_Myr_bin_upper) + 1): 
@@ -100,26 +103,56 @@ def compute_stellar_fluxes_tree(gas_coords_cgs, star_coords_cgs, star_mass_Msol,
             else:
                 star_incl = ((log_star_age_Myr <= log_stellar_age_Myr_bin_upper[idx_age]) & (log_star_age_Myr > log_stellar_age_Myr_bin_upper[idx_age - 1]))
 
-            star_L_ion = fEsc_ion * stellar_luminosity_ion(star_age_Myr[star_incl]) * star_mass_Msol[star_incl]
-            #print('stellar_luminosity_ion TREE MIN = {}, MAX = {}'.format(np.min(star_L_ion), np.max(star_L_ion))) #niranjan
+            star_L_ion = fEsc_ion * stellar_luminosity_ion(star_age_Myr[star_incl]) * star_mass_Msol[star_incl]            
             star_L_G0 = fEsc_G0 * stellar_luminosity_G0(star_age_Myr[star_incl]) * star_mass_Msol[star_incl]
-            #print('stellar_luminosity_G0 TREE MIN = {}, MAX = {}'.format(np.min(star_L_G0), np.max(star_L_G0))) #niranjan
-            if np.size(star_L_ion) < 1:
-                 print('SIZE OF star_L_ion IS ZERO')
-                 print('SIZE OF star_L_G0 IS {}', format(np.size(star_L_G0)))
-                 ChimesFluxIon[:, idx_age] = np.zeros(Npart_gas) 
-                 ChimesFluxG0[:, idx_age] = np.zeros(Npart_gas)         
-            else:
-                 fluxes_ion = ptg.AccelTarget(gas_coords_cgs, star_coords_cgs[star_incl], star_L_ion, softening_target=None, softening_source=None, G=1./(4*np.pi), theta=.7, tree=None, return_tree=False, parallel=True, method='tree', quadrupole=False)
-     
-                 fluxes_G0 = ptg.AccelTarget(gas_coords_cgs, star_coords_cgs[star_incl], star_L_G0, softening_target=None, softening_source=None, G=1./(4*np.pi), theta=.7, tree=None, return_tree=False, parallel=True, method='tree', quadrupole=False)
-       
-                 ChimesFluxIon[:, idx_age] = np.sqrt((fluxes_ion * fluxes_ion).sum(axis=1))
-                 ChimesFluxG0[:, idx_age] = np.sqrt((fluxes_G0 * fluxes_G0).sum(axis=1))
+           
+            if np.size(star_L_ion) > 0:
 
-            #print('ChimesFluxIon TREE MIN = {}, MAX = {}'.format(np.min(ChimesFluxIon), np.max(ChimesFluxIon))) #niranjan
-            #print('ChimesFluxG0 TREE MIN = {}, MAX = {}'.format(np.min(ChimesFluxG0), np.max(ChimesFluxG0))) #niranjan
+                 fluxes_ion = FluxTarget_tree(gas_coords_cgs, star_coords_cgs[star_incl], star_L_ion)     
+                 fluxes_G0 = FluxTarget_tree(gas_coords_cgs, star_coords_cgs[star_incl], star_L_G0)
+
+                 ChimesFluxIon[:, idx_age] = fluxes_ion
+                 ChimesFluxG0[:, idx_age] = fluxes_G0
+            else:
+                 print('Empty Stellar age bin!')
+            
     return np.float32(ChimesFluxIon), np.float32(ChimesFluxG0)
+
+
+
+
+def compute_stellar_fluxes_bruteforce(gas_coords_cgs, star_coords_cgs, star_mass_Msol, star_age_Myr, fEsc_ion, fEsc_G0, rank):
+    Npart_gas = len(gas_coords_cgs)
+    Npart_star = len(star_coords_cgs)
+
+    ChimesFluxIon = np.zeros((Npart_gas, len(log_stellar_age_Myr_bin_upper) + 1), dtype = np.float32)
+    ChimesFluxG0 = np.zeros((Npart_gas, len(log_stellar_age_Myr_bin_upper) + 1), dtype = np.float32)
+
+    log_star_age_Myr = np.log10(star_age_Myr)
+
+    for idx_age in range(len(log_stellar_age_Myr_bin_upper) + 1):
+            if idx_age == 0:
+                star_incl = (log_star_age_Myr <= log_stellar_age_Myr_bin_upper[idx_age])
+            elif idx_age == len(log_stellar_age_Myr_bin_upper):
+                star_incl = (log_star_age_Myr > log_stellar_age_Myr_bin_upper[idx_age - 1])
+            else:
+                star_incl = ((log_star_age_Myr <= log_stellar_age_Myr_bin_upper[idx_age]) & (log_star_age_Myr > log_stellar_age_Myr_bin_upper[idx_age - 1]))
+
+            star_L_ion = fEsc_ion * stellar_luminosity_ion(star_age_Myr[star_incl]) * star_mass_Msol[star_incl]
+            star_L_G0 = fEsc_G0 * stellar_luminosity_G0(star_age_Myr[star_incl]) * star_mass_Msol[star_incl]
+
+            if np.size(star_L_ion) > 0:
+
+                 fluxes_ion = FluxTarget_bruteforce(gas_coords_cgs, star_coords_cgs[star_incl], star_L_ion)
+                 fluxes_G0 = FluxTarget_bruteforce(gas_coords_cgs, star_coords_cgs[star_incl], star_L_G0)
+
+                 ChimesFluxIon[:, idx_age] = fluxes_ion
+                 ChimesFluxG0[:, idx_age] = fluxes_G0
+            else:
+                 print('Empty Stellar age bin!')
+
+    return np.float32(ChimesFluxIon), np.float32(ChimesFluxG0)
+
 
 
 

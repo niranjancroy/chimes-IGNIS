@@ -260,13 +260,14 @@ def initializeDefaultGlobalVariables(
         myGlobalVars.cellSelfShieldingOn = 0
     elif (driver_parameters["shield_mode"] == "read-in" or 
         driver_parameters["shield_mode"] == "Jeans" or 
-        driver_parameters["shield_mode"] == "Colibre"): 
+        driver_parameters["shield_mode"] == "Colibre" or
+        driver_parameters["shield_mode"] == "Sobolev"):
 	# Self shielding, but column densities of individual 
 	# species are not updated during the hydro time-step. 
         myGlobalVars.cellSelfShieldingOn = 1 
     else: 
         raise KeyError(
-            "shield_mode %d not recognised. Aborting." % (
+            "shield_mode %s not recognised. Aborting." % (
                 driver_parameters["shield_mode"]))
 
     # The remaining parameters are read in from the parameter file

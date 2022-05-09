@@ -29,10 +29,9 @@ def FluxTarget_bruteforce(x_target, x_source, L_source):
             if r2 == 0: continue # no force if at the origin
             r = sqrt(r2)
      
-            for k in range(3):
-                flux[i,k] += L_source[j]*(1/r2) #niranjan: trying out without vectors
+            flux[i] += L_source[j]*(1/r2)*(1/(4*np.pi))
 
-    return (1/(4*pi))*flux
+    return flux
 
 FluxTarget_bruteforce_parallel = njit(FluxTarget_bruteforce,fastmath=True,parallel=True)
 FluxTarget_bruteforce = njit(FluxTarget_bruteforce,fastmath=True)
@@ -82,7 +81,7 @@ def FluxWalk(pos, tree, softening=0, no=-1, theta=0.7):
     theta - cell opening angle used to control force accuracy; smaller is slower (runtime ~ theta^-3) but more accurate. (default 0.7 gives ~1% accuracy)
     """
     if no < 0: no = tree.NumParticles # we default to the top-level node index
-    flux = zeros(3,dtype=np.float64)
+    flux =  zeros(1,dtype=np.float64)
     dx = np.empty(3,dtype=np.float64)
 
     h = max(tree.Softenings[no],softening) #this is defined just for the purpose of tree calculations, we'll have zero softening always
@@ -110,27 +109,29 @@ def FluxWalk(pos, tree, softening=0, no=-1, theta=0.7):
             no = tree.FirstSubnode[no]
             continue
 
-        if sum_field: # OK, we have fac for this element and can now sum the force
-            for k in range(3): flux[k] += fac*(1/(4*np.pi)) 
-
+        if sum_field: # OK, we have fac for this element and can now sum the flux
+            flux += fac*(1/(4*np.pi)) 
+  
     return flux
 
 
-def FluxTarget_tree(pos_target, softening_target, tree, theta=0.7):
+def FluxTarget_treecal(pos_target, softening_target, tree, theta=0.7):
 
       if softening_target is None: softening_target = zeros(pos_target.shape[0])
-      result = empty(pos_target.shape) 
+      result = empty(pos_target.shape)
 
-      for i in prange(pos_target.shape[0]):
+      for i in prange(pos_target.shape[0]): 
             result[i] = FluxWalk(pos_target[i], tree, softening=softening_target[i], theta=theta)
-
+   
+      print("Shape of output in FluxTarget_treecal = ", np.shape(result))
+      result = result[:,0]
       return result
 
-FluxTarget_tree_parallel = njit(FluxTarget_tree,fastmath=True,parallel=True)
-FluxTarget_tree = njit(FluxTarget_tree,fastmath=True)
+FluxTarget_treecal_parallel = njit(FluxTarget_treecal,fastmath=True,parallel=True)
+FluxTarget_treecal = njit(FluxTarget_treecal,fastmath=True)
 
 
-def FluxTarget(pos_target, pos_source, L_source, theta=.7, softening_source=None, tree=None, return_tree=False, parallel=False):
+def FluxTarget_tree(pos_target, pos_source, L_source, theta=.7, softening_source=None, tree=None, return_tree=False, parallel=False):
     """Stellar flux calculation for general N+M body case
 
     Returns the flux for a set of M star particles with positions x_source and luminosities L_source, at the positions of a set of N particles that need not be the same.
@@ -159,7 +160,7 @@ def FluxTarget(pos_target, pos_source, L_source, theta=.7, softening_source=None
     Returns
     -------
     phi: array_like
-        shape (N,3) array of flux at the target positions, though not a vector rather each array element having the same value
+        shape (N,1) array of flux at the target positions
     """
 
     quadrupole = False
@@ -167,8 +168,8 @@ def FluxTarget(pos_target, pos_source, L_source, theta=.7, softening_source=None
     if softening_source is None and pos_source is not None: softening_source = np.zeros(len(pos_source))
     if tree is None: tree = ConstructTree(np.float64(pos_source),np.float64(L_source), np.float64(softening_source), quadrupole=quadrupole) # build the tree if needed
     if parallel:
-        flux = FluxTarget_tree_parallel(pos_target, softening_target=None, tree=tree,theta=theta)
+        flux = FluxTarget_treecal_parallel(pos_target, softening_target=None, tree=tree,theta=theta)
     else:
-        flux = FluxTarget_tree(pos_target, softening_target=None, tree=tree,theta=theta)
+        flux = FluxTarget_treecal(pos_target, softening_target=None, tree=tree,theta=theta)
 
     return flux

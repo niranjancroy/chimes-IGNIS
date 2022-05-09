@@ -6,6 +6,7 @@ import time
 sys.path.append('/mnt/home/nroy/libraries/pfh_python')
 sys.path.append('/mnt/home/nroy/libraries/daa_python')
 sys.path.append('/mnt/home/nroy/libraries/meshoid/lib/python3.8/site-packages/meshoid-1.32-py3.8.egg')
+sys.path.append('/mnt/home/nroy/chimes-IGNIS/chimes-driver/utils')
 #sys.path.append('/home/jovyan/code/utilities')
 #sys.path.append('/home/jovyan/code/gizmo_analysis')
 import gadget as g
@@ -374,7 +375,7 @@ class SnapshotData:
                      self.ChimesFluxG0_arr = np.array(h5file[self.driver_pars["snapshot_flux_G0_array"]]) 
                  except KeyError: 
                      raise Exception("ERROR: could not find array %s in the snapshot. You will need to compute the stellar fluxes, using the compute_stellar_fluxes parameter. Aborting." % (self.driver_pars["snapshot_flux_G0_array"], ))
-             elif self.driver_pars["compute_stellar_fluxes"] == 1: 
+             elif self.driver_pars["compute_stellar_fluxes"] >= 1: 
                  # Read in the star and gas particle data 
                  # needed to compute stellar fluxes. 
                  ##self.gas_coords_arr = np.array(h5file['PartType0/Coordinates']) * unit_length_in_cgs 
