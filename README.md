@@ -1,1 +1,1 @@
-This is a github repo of Chimes (developed by Alex Richings https://richings.bitbucket.io/chimes/home.html) which has all the dependencies in one place. Used by Daniel group at UConn for mock observation studies of simulated galaxies.
+This is a github repo of Chimes (developed by Alex Richings https://richings.bitbucket.io/chimes/home.html) which has all the dependencies in one place with new features added by Niranjan and Daniel. 
