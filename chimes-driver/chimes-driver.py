@@ -15,9 +15,9 @@ try:
     from utils.snapshot_utils import SnapshotData, snapshot_check_output_arrays 
     from utils.grid_utils import create_grid, grid_check_output_arrays 
     from utils.chimes_utils import compute_cooling_rates 
-    from utils.shielding_utils import compute_jeans_shield_length, compute_colibre_Nref, compute_colibre_shield_length 
+    from utils.shielding_utils import compute_jeans_shield_length, compute_colibre_Nref, compute_colibre_shield_length, compute_sobolev_shield_length 
     from utils.dust_utils import J09DC16_set_depletion_factors, colibre_set_depletion_factors 
-    from utils.uv_field_utils import compute_stellar_fluxes, compute_colibre_ISRF, compute_AGN_isotropic_photon_density 
+    from utils.uv_field_utils import compute_stellar_fluxes,compute_stellar_fluxes_tree, compute_stellar_fluxes_bruteforce,  compute_colibre_ISRF, compute_AGN_isotropic_photon_density 
     from utils.phys_const import solar_mass_cgs 
 except ImportError:
     ## On some Python distributions it cannot
@@ -33,9 +33,9 @@ except ImportError:
     from snapshot_utils import SnapshotData, snapshot_check_output_arrays 
     from grid_utils import create_grid, grid_check_output_arrays 
     from chimes_utils import compute_cooling_rates 
-    from shielding_utils import compute_jeans_shield_length, compute_colibre_Nref, compute_colibre_shield_length 
+    from shielding_utils import compute_jeans_shield_length, compute_colibre_Nref, compute_colibre_shield_length, compute_sobolev_shield_length 
     from dust_utils import J09DC16_set_depletion_factors, colibre_set_depletion_factors 
-    from uv_field_utils import compute_stellar_fluxes, compute_colibre_ISRF, compute_AGN_isotropic_photon_density 
+    from uv_field_utils import compute_stellar_fluxes, compute_stellar_fluxes_tree, compute_stellar_fluxes_bruteforce, compute_colibre_ISRF, compute_AGN_isotropic_photon_density 
     from phys_const import solar_mass_cgs 
     
 ## mpi parallelization
@@ -558,9 +558,8 @@ def main():
             
             if driver_pars["snapshot_type"] == "GIZMO": 
                 my_snapshot_data.load_GIZMO()
-            elif driver_pars["snapshot_type"] == "GIZMO_MultiFile":
+            elif driver_pars["snapshot_type"] == "GIZMO_MultiFile": #niranjan: 2021
                 my_snapshot_data.load_GIZMO_MultiFile()
-                #my_snapshot_data.distance_filter() #niranjan
             elif driver_pars["snapshot_type"] == "AREPO": 
                 my_snapshot_data.load_AREPO() 
             elif driver_pars["snapshot_type"] == "USER": 
@@ -635,7 +634,7 @@ def main():
     ## send the total number of particles to each MPI task
     N_tot = comm.bcast(N_tot,root=0)
 
-    if driver_pars["UV_field"] == "StellarFluxes" and driver_pars["compute_stellar_fluxes"] == 1: 
+    if driver_pars["UV_field"] == "StellarFluxes" and driver_pars["compute_stellar_fluxes"] >= 1: 
         N_star = comm.bcast(N_star, root = 0) 
 
     ## split the particles among the tasks
@@ -752,23 +751,26 @@ def main():
 
     comm.Barrier()
 
-    print ('driver_pars["UV_field"] =',driver_pars["UV_field"],'driver_pars["compute_stellar_fluxes"] =', driver_pars["compute_stellar_fluxes"], 'N_star =',N_star)
-    if (driver_pars["UV_field"] == "StellarFluxes" and driver_pars["compute_stellar_fluxes"] == 1 and N_star > 0): 
+ 
+    if (driver_pars["UV_field"] == "StellarFluxes" and driver_pars["compute_stellar_fluxes"] >=1 and N_star > 0): 
         # Broadcast all star particles to all MPI tasks 
         star_coords_arr = comm.bcast(star_coords_arr, root = 0) 
         star_mass_arr = comm.bcast(star_mass_arr, root = 0) 
         star_age_Myr_arr = comm.bcast(star_age_Myr_arr, root = 0) 
-        #niranjan 2021: adding following print statement 
-        print ("inside IF condition")
         comm.Barrier()
 
         if rank == 0: 
             print("Computing stellar fluxes")
             sys.stdout.flush()
+        if (driver_pars["compute_stellar_fluxes"]==1):
+            ChimesFluxIon_arr, ChimesFluxG0_arr = compute_stellar_fluxes(gas_coords_arr, star_coords_arr, star_mass_arr / solar_mass_cgs, star_age_Myr_arr, driver_pars["stellar_fluxes_fEsc_ion"], driver_pars["stellar_fluxes_fEsc_G0"], rank)#chimes default 
 
-        ChimesFluxIon_arr, ChimesFluxG0_arr = compute_stellar_fluxes(gas_coords_arr, star_coords_arr, star_mass_arr / solar_mass_cgs, star_age_Myr_arr, driver_pars["stellar_fluxes_fEsc_ion"], driver_pars["stellar_fluxes_fEsc_G0"], rank) 
-	#niranjan 2021: adding the print statement to make sure it's computed, cause "data_list_thisTask.append(ChimesFluxIon_arr)" invoking error
-        print("computing stellar fluxes on rank =", rank)
+        elif (driver_pars["compute_stellar_fluxes"]==2):
+            ChimesFluxIon_arr, ChimesFluxG0_arr = compute_stellar_fluxes_tree(gas_coords_arr, star_coords_arr, star_mass_arr / solar_mass_cgs, star_age_Myr_arr, driver_pars["stellar_fluxes_fEsc_ion"], driver_pars["stellar_fluxes_fEsc_G0"], rank) #niranjan: using octree
+
+        elif (driver_pars["compute_stellar_fluxes"]==3):
+            ChimesFluxIon_arr, ChimesFluxG0_arr = compute_stellar_fluxes_bruteforce(gas_coords_arr, star_coords_arr, star_mass_arr / solar_mass_cgs, star_age_Myr_arr, driver_pars["stellar_fluxes_fEsc_ion"], driver_pars["stellar_fluxes_fEsc_G0"], rank) #niranjan: bruteforce using njit which is faster 
+
         comm.Barrier() 
 
         if rank == 0: 
@@ -779,8 +781,6 @@ def main():
     ##  each task uses its own chunk of the data
     data_list_thisTask = [nH_arr, temperature_arr, metallicity_arr, shieldLength_arr, init_chem_arr] 
     if driver_pars["UV_field"] == "StellarFluxes":
-        #niranjan: adding the following line to get ChimesFluxIon_arr and ChimesFluxG0_arr
-        #ChimesFluxIon_arr, ChimesFluxG0_arr = compute_stellar_fluxes(gas_coords_arr, star_coords_arr, star_mass_arr / solar_mass_cgs, star_age_Myr_arr, driver_pars["stellar_fluxes_fEsc_ion"], driver_pars["stellar_fluxes_fEsc_G0"], rank) 
         data_list_thisTask.append(ChimesFluxIon_arr) 
         data_list_thisTask.append(ChimesFluxG0_arr)
     elif driver_pars["UV_field"] == "S04" and driver_pars["IO_mode"] == "snapshot":
@@ -870,7 +870,7 @@ def main():
     ## by each task. 
     chimes_total_time = comm.gather(chimes_cumulative_time, root = 0) 
 
-    if driver_pars["UV_field"] == "StellarFluxes" and driver_pars["compute_stellar_fluxes"] == 1: 
+    if driver_pars["UV_field"] == "StellarFluxes" and driver_pars["compute_stellar_fluxes"] >= 1: 
         # Collect stellar fluxes on the root node 
         if rank == 0: 
             ion_recv_buffer = [] 
@@ -937,7 +937,7 @@ def main():
             else: 
                 raise Exception("ERROR: IO_mode %s cannot be run with driver_mode %s. Aborting." % (driver_pars["IO_mode"], driver_pars["driver_mode"])) 
 
-            if driver_pars["UV_field"] == "StellarFluxes" and driver_pars["compute_stellar_fluxes"] == 1: 
+            if driver_pars["UV_field"] == "StellarFluxes" and driver_pars["compute_stellar_fluxes"] >= 1: 
                 with h5py.File(driver_pars["output_file"], 'a') as h5file_out:
                     if driver_pars["snapshot_flux_ion_array"] != None: 
                         h5file_out[driver_pars["snapshot_flux_ion_array"]] = ChimesFluxIon_ALL 
