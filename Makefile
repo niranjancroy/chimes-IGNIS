@@ -1,6 +1,6 @@
-SUNDIALS_PATH = /home/jovyan/home/ 
-HDF5_INCL_PATH = /srv/conda/envs/notebook/include
-HDF5_LIB_PATH = /srv/conda/envs/notebook/lib
+SUNDIALS_PATH = /path/to/sundials/install/dir
+HDF5_INCL_PATH = 
+HDF5_LIB_PATH = 
 
 CC = gcc 
 CFLAGS = -DCHIMES_USE_DOUBLE_PRECISION 
