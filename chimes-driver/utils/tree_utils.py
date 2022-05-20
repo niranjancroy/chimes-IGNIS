@@ -123,7 +123,7 @@ def FluxTarget_treecal(pos_target, softening_target, tree, theta=0.7):
       for i in prange(pos_target.shape[0]): 
             result[i] = FluxWalk(pos_target[i], tree, softening=softening_target[i], theta=theta)
    
-      print("Shape of output in FluxTarget_treecal = ", np.shape(result))
+      #print("Shape of output in FluxTarget_treecal = ", np.shape(result))
       result = result[:,0]
       return result
 
