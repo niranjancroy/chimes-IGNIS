@@ -3,17 +3,14 @@ import numpy as np
 import os
 import sys 
 import time
-sys.path.append('/mnt/home/nroy/libraries/pfh_python')
-sys.path.append('/mnt/home/nroy/libraries/daa_python')
-sys.path.append('/mnt/home/nroy/libraries/meshoid/lib/python3.8/site-packages/meshoid-1.32-py3.8.egg')
-sys.path.append('/mnt/home/nroy/chimes-IGNIS/chimes-driver/utils')
-#sys.path.append('/home/jovyan/code/utilities')
-#sys.path.append('/home/jovyan/code/gizmo_analysis')
+
+sys.path.append('./ext-lib/pfh_python')
+sys.path.append('./utils')
+sys.path.append('/mnt/home/nroy/source_code/chimes-IGNIS/meshoid/lib_meshoid/lib/python3.8/site-packages/meshoid-1.41-py3.8.egg') #add path to meshoid installation directory here for your own machine
+
 import gadget as g
-from gizmopy.load_fire_snap import load_fire_snap #go othrough the ocde
-from gizmopy.load_from_snapshot import load_from_snapshot #go othrough the ocde
-#from daa_python import *
-from daa_constants import *
+from gizmopy.load_fire_snap import load_fire_snap 
+from gizmopy.load_from_snapshot import load_from_snapshot 
 from meshoid import *
 import matplotlib.pyplot as plt
 
@@ -77,7 +74,7 @@ class SnapshotData:
         elif self.driver_pars['shield_mode'] == "Sobolev":
              self.shieldLength_arr = np.zeros(len(self.nH_arr), dtype = np.float64)     
              print("Meshoid calculating density gradient...")        
-             print("Shape of Coord, Mass, HSML array = ", np.shape(self.gas_coords_arr), np.shape(self.gas_mass), np.shape(self.gas_hsml))
+             #print("Shape of Coord, Mass, HSML array = ", np.shape(self.gas_coords_arr), np.shape(self.gas_mass), np.shape(self.gas_hsml))
              M = Meshoid(self.gas_coords_arr, self.gas_mass, self.gas_hsml)
              density_gradient = M.D(self.gas_density) #calculating density gradient using meshoid
              density_gradient_magnitude = np.sqrt((density_gradient * density_gradient).sum(axis=1))       
@@ -91,9 +88,9 @@ class SnapshotData:
         # HII regions 
         if self.driver_pars["disable_shielding_in_HII_regions"] == 1: 
             ind_HII = (self.HIIregion_delay_time > 0.0)
-            print('non-zero indices =', ind_HII.nonzero())
+            #print('non-zero indices =', ind_HII.nonzero())
             self.shieldLength_arr[ind_HII] = 1.0 
-        print ('MIN shieldLength_arr =', np.min(self.shieldLength_arr), 'MAX shieldLength_arr =', np.max(self.shieldLength_arr)) 
+        #print ('MIN shieldLength_arr =', np.min(self.shieldLength_arr), 'MAX shieldLength_arr =', np.max(self.shieldLength_arr)) 
 
         return
 
@@ -437,7 +434,8 @@ class SnapshotData:
 
                  else: 
                      ##omega0 = h5file['Header'].attrs['Omega0'] 
-                     omega0 = Omega0 #from daa_constants #check for this using the load_from_snapshot
+                     omega0 = 0.2821
+                     #omega0 = Omega0 #from daa_constants #check for this using the load_from_snapshot
                      H0_cgs = hubble * 3.2407789e-18            # Convert HubbleParam (in 100 km/s/Mpc) to s^-1 
                      
                      try: 
@@ -498,8 +496,8 @@ class SnapshotData:
          #filtering the data within cutoff radius wrt black hole
          ##self.distance_filter(bh_center, filtering_radius)
          
-         print ("INDECES OF HII_REGION PARTICLES AFTER DISTANCE FILTERING : ", np.nonzero(self.HIIregion_delay_time)[0])         
-         print ("Shape of HIIregion_delay_time after distance filtering =", np.shape(self.HIIregion_delay_time), "non-zero items =", np.count_nonzero(self.HIIregion_delay_time))
+         #print ("INDECES OF HII_REGION PARTICLES AFTER DISTANCE FILTERING : ", np.nonzero(self.HIIregion_delay_time)[0])         
+         #print ("Shape of HIIregion_delay_time after distance filtering =", np.shape(self.HIIregion_delay_time), "non-zero items =", np.count_nonzero(self.HIIregion_delay_time))
 
          return 
 
