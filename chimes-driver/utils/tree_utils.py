@@ -118,17 +118,15 @@ def FluxWalk(pos, tree, softening=0, no=-1, theta=0.7):
 def FluxTarget_treecal(pos_target, softening_target, tree, theta=0.7):
 
       if softening_target is None: softening_target = zeros(pos_target.shape[0])
-      result = empty(pos_target.shape)
+      result = np.zeros(pos_target.shape[0], dtype=np.float64)
 
       for i in prange(pos_target.shape[0]): 
             result[i] = FluxWalk(pos_target[i], tree, softening=softening_target[i], theta=theta)
    
-      #print("Shape of output in FluxTarget_treecal = ", np.shape(result))
-      result = result[:,0]
       return result
 
-FluxTarget_treecal_parallel = njit(FluxTarget_treecal,fastmath=True,parallel=True)
-FluxTarget_treecal = njit(FluxTarget_treecal,fastmath=True)
+#FluxTarget_treecal_parallel = njit(FluxTarget_treecal,fastmath=True,parallel=True) #njit causing crash in FluxTarget_treecal when shape[0] is used so not using in this case. Performance similar.
+#FluxTarget_treecal = njit(FluxTarget_treecal,fastmath=True)
 
 
 def FluxTarget_tree(pos_target, pos_source, L_source, theta=.7, softening_source=None, tree=None, return_tree=False, parallel=False):
