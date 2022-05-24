@@ -434,8 +434,7 @@ class SnapshotData:
 
                  else: 
                      ##omega0 = h5file['Header'].attrs['Omega0'] 
-                     omega0 = 0.2821
-                     #omega0 = Omega0 #from daa_constants #check for this using the load_from_snapshot
+                     omega0 = load_from_snapshot( 'Omega0', -1, input_dir, snapnum)
                      H0_cgs = hubble * 3.2407789e-18            # Convert HubbleParam (in 100 km/s/Mpc) to s^-1 
                      
                      try: 
