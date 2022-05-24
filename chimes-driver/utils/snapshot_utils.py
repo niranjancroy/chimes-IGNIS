@@ -6,7 +6,6 @@ import time
 
 sys.path.append('./ext-lib/pfh_python')
 sys.path.append('./utils')
-sys.path.append('/mnt/home/nroy/source_code/chimes-IGNIS/meshoid/lib_meshoid/lib/python3.8/site-packages/meshoid-1.41-py3.8.egg') #add path to meshoid installation directory here for your own machine
 
 import gadget as g
 from gizmopy.load_fire_snap import load_fire_snap 
