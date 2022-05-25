@@ -1,17 +1,5 @@
    This is a github repo of Chimes (developed by Alex Richings https://richings.bitbucket.io/chimes/home.html) which has all the dependencies in one place with new features added by Niranjan and Daniel.
    
-   New features added in CHIMES by Niranjan and Daniel:
-   - Option to read-in multifile snapshots from FIRE-like simulations
-   	- By selecting 'GIZMO_MultiFile' as the 'snapshot_type' in parameter file
-   - Manual HII region selection when not available from simulation data
-   	- If disable_shielding_in_HII_regions is set to 1 and HII region array is not available in the simulation data
-   - Sobolev approximation of shielding length
-   	- If shield_mode is set to "Sobolev"
-   - Radius filtering option
-   	- By setting filtering_radius in kpc in the parameter file.
-   - Significantly faster incident flux calculation from star particles using tree method
-   	- By setting "compute_stellar_fluxes"  to  '2'  ( '1'-Chimes default; '2'-Using Tree; '3'-Using faster bruteforce)
-   
    INSTALLATION NOTES (also very useful notes by Alex Richings here https://richings.bitbucket.io/chimes/user_guide/GettingStarted/index.html based on which these instructions are compiled): 
    - Clone the repo from https://github.com/NiranjanCRoy/chimes-IGNIS.git
    - Clone the data repo from https://bitbucket.org/richings/chimes-data.git inside chimes-IGNIS. This is large in size so couldn't be added to chimes-IGNIS and any new data can be updated as well by directly pulling from this repo. 
