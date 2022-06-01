@@ -4,8 +4,8 @@ import os
 import sys 
 import time
 
-sys.path.append('./ext-lib/pfh_python')
-sys.path.append('./utils')
+sys.path.append('ext-lib/pfh_python')
+sys.path.append('utils')
 
 import gadget as g
 from gizmopy.load_fire_snap import load_fire_snap 
