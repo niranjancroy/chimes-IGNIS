@@ -2,7 +2,7 @@ from __future__ import division,print_function
 
 import numpy as np
 import ctypes
-import pfh_utils as util
+#import pfh_utils as util
 import os.path
 import h5py
 #import struct
