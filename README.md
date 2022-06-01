@@ -2,7 +2,8 @@
    
    INSTALLATION NOTES (also very useful notes by Alex Richings here https://richings.bitbucket.io/chimes/user_guide/GettingStarted/index.html based on which these instructions are compiled): 
    - Clone the repo from https://github.com/NiranjanCRoy/chimes-IGNIS.git
-   - Clone the data repo from https://bitbucket.org/richings/chimes-data.git inside chimes-IGNIS. This is large in size so couldn't be added to chimes-IGNIS and any new data can be updated as well by directly pulling from this repo. 
+   - Clone the data repo from https://bitbucket.org/richings/chimes-data.git inside chimes-IGNIS. This is large in size so couldn't be added to chimes-IGNIS and any new data can be updated as well by directly pulling from this repo.
+	- In case the files are not being downloaded properly, perform a "git lfs install". Sometimes just the file pointers are downloaded when a repo with large files is cloned. 
    - untar the 'sundials-5.8.0.tar.gz' and 'cd' to the sundials-5.8.0 directory to run the following commands
    	- mkdir build
    	- cd build
