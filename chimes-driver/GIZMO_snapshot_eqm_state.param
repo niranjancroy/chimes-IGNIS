@@ -21,7 +21,7 @@ stellar_fluxes_fEsc_ion    0.05
 stellar_fluxes_fEsc_G0     0.1 
 
 UV_field                   StellarFluxes
-shield_mode                Jeans #Sobolev 
+shield_mode                Sobolev #Jeans 
 dust_depletion             DC16 
 
 #distance based filtering. 
