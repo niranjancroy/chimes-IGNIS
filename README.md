@@ -24,9 +24,11 @@
    
    
    TO RUN: 
-   Inside chimes-drive directory:
-   - For parallel:
+   Inside chimes-driver directory:
+   - Add the paths of 'libchimes.so' and chimes-data directory to the chimes parameter file.
+        - Add the snapshot path to inpu_file parameter in the parameter file
+   - To run in parallel:
    	- mpirun -np 40 python chimes-driver.py GIZMO_snapshot_eqm_state.param 
-   - For serial:
+   - To run in serial:
 	- mpirun -np 1 python chimes-driver.py GIZMO_snapshot_eqm_state.param 
 		- Using mpirun because sometimes executables don't run without that on interactive nodes. One can also run "unset SLURM_JOBID" before to run the python command in a usual way without mpirun.  
