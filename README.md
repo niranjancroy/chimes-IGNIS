@@ -17,7 +17,7 @@
    	- hdf5 paths are left blank, if the system fails to automatically detect it, proper paths should be added
    	- run 'make'
    	- "libchimes.so" should be created which is the file we wanted to build.
-   - We now need to install Meshoid which is needed to calculate the density gradient needed for the Sobolev shielding length calculations if chosen.
+   - We now need to install Meshoid (developed by Mike Grudic https://github.com/mikegrudic/meshoid.git) which is needed to calculate the density gradient needed for the Sobolev shielding length calculations if chosen.
    	-  cd to the meshoid directory available in chimes-IGNIS and execute the following commands
    	- python setup.py install --prefix=/desired/path/to/meshoidlib
    	- add this '/path/+/lib/python3.8/site-packages/meshoid-1.41-py3.8.egg' to the PYTHONPATH (and in bash to avoid having to run it each time while using chimes)
