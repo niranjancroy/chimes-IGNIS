@@ -26,7 +26,7 @@
    TO RUN: 
    Inside chimes-driver directory:
    - Add the paths of 'libchimes.so' and chimes-data directory to the chimes parameter file.
-        - Add the snapshot path to inpu_file parameter in the parameter file
+        - Add the snapshot path to input_file parameter in the parameter file
    - To run in parallel:
    	- mpirun -np 40 python chimes-driver.py GIZMO_snapshot_eqm_state.param 
    - To run in serial:
