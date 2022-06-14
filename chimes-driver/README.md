@@ -16,7 +16,7 @@ New features added in chimes-driver by Niranjan and Daniel:
 	- If shield_mode is set to "Sobolev"
 - Radius filtering option
 	- By setting filtering_radius in kpc in the parameter file.
-- Significantly faster incident flux calculation from star particles using tree method
+- Significantly faster incident flux calculation from star particles using tree method (Using algorithms from Mike Grudic's pytreegrav https://github.com/mikegrudic/pytreegrav.git)
 	- By setting "compute_stellar_fluxes"  to  '2'  ( '1'-Chimes default; '2'-Using Tree; '3'-Using faster bruteforce)
 
 
