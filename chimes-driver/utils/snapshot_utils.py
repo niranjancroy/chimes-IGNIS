@@ -271,17 +271,19 @@ class SnapshotData:
          snapnum  = int(input_file[LastUnderscore+1:]) 
  
          #with h5py.File(self.driver_pars['input_file'], 'r') as h5file:
-         header = g.readsnap(input_dir, snapnum, 0, header_only=1)
+         #header = g.readsnap(input_dir, snapnum, 0, header_only=1)
         
          # Define unit conversions. 
          #hubble = h5file['Header'].attrs['HubbleParam']
-         hubble = header['hubble']
+         #hubble = header['hubble']
+         hubble = load_from_snapshot('HubbleParam', -1, input_dir, snapnum)
 
          if self.driver_pars["snapshot_cosmo_flag"] == 0: 
              expansion_factor = 1.0 
          elif self.driver_pars["snapshot_cosmo_flag"] == 1: 
              #expansion_factor = h5file['Header'].attrs['Time']
-             expansion_factor = header['time']
+             #expansion_factor = header['time']
+             expansion_factor = load_from_snapshot('Time', -1, input_dir, snapnum)
 
          # Gizmo units include factors of h^-1
          ##unit_mass_in_cgs = self.driver_pars["snapshot_unitMass_cgs"] / hubble  
@@ -382,8 +384,9 @@ class SnapshotData:
 
                  if self.driver_pars["snapshot_cosmo_flag"] == 0: 
                      ##time_Myr = h5file['Header'].attrs['Time'] * unit_time_in_cgs / seconds_in_a_Myr
-                     time_Myr = header['time'] * unit_time_in_cgs / seconds_in_a_Myr
-
+                     #time_Myr = header['time'] * unit_time_in_cgs / seconds_in_a_Myr
+                     time_Myr = load_from_snapshot('Time', -1, input_dir, snapnum) * unit_time_in_cgs / seconds_in_a_Myr
+                     
                      try:
                          ##coords_type4 = np.array(h5file['PartType4/Coordinates']) * unit_length_in_cgs
                          coords_type4 = load_from_snapshot('Coordinates', 4, input_dir, snapnum) * unit_length_in_cgs
