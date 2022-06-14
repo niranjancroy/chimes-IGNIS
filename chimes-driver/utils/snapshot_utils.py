@@ -38,10 +38,12 @@ class SnapshotData:
         self.star_mass_arr = None 
         self.star_age_Myr_arr = None 
         self.HIIregion_delay_time = None
-        #niranjan 2021: adding the following
+        #niranjan 2021: adding the following variables
         self.gas_mass = None
         self.gas_hsml = None #smoothing length
-        self.gas_density = None 
+        self.gas_density = None
+        self.center = None 
+        self.filtering_radius_cm = None
         return 
 
     def set_shielding_array(self): 
@@ -338,6 +340,7 @@ class SnapshotData:
          ##except KeyError:
 
          mmw_mu_arr = load_from_snapshot('ChimesMu', 0, input_dir, snapnum)
+
          if (np.size(mmw_mu_arr) == 1): #if 'ChimesMu' is not in the snapshot, load_from_snap will return 0, not an array
              print ('mmw_mu_arr not found in snapshot, calculating manually...') 
 
@@ -481,6 +484,10 @@ class SnapshotData:
          bh_center = load_from_snapshot('Coordinates', 5, input_dir, snapnum)
          filtering_radius = self.driver_pars["filtering_radius"]
 
+         self.center = bh_center
+
+         self.filtering_radius_cm = filtering_radius * unit_length_in_cgs
+
          self.distance_filter(bh_center, filtering_radius)
 
          # Set the shielding length array 
@@ -491,7 +498,7 @@ class SnapshotData:
          ##bh_center = load_from_snapshot('Coordinates', 5, input_dir, snapnum)
          ##filtering_radius = self.driver_pars["filtering_radius"] 
 
-         #filtering the data within cutoff radius wrt black hole
+         #filtering the data within filtering radius wrt black hole
          ##self.distance_filter(bh_center, filtering_radius)
          
          #print ("INDECES OF HII_REGION PARTICLES AFTER DISTANCE FILTERING : ", np.nonzero(self.HIIregion_delay_time)[0])         
