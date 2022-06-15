@@ -1,12 +1,12 @@
 # General Parameters 
-chimes_library_path        /mnt/home/nroy/chimes-IGNIS/libchimes.so
-chimes_data_path           /mnt/home/nroy/chimes-IGNIS/chimes-data 
+chimes_library_path        /mnt/home/nroy/test/chimes-IGNIS/libchimes.so
+chimes_data_path           /mnt/home/nroy/test/chimes-IGNIS/chimes-data 
 
 driver_mode                eqm_state 
 IO_mode		           snapshot 
 
 input_file 	     	   /mnt/sdceph/users/dangles/FIRE/bhfeedback/h113_HR_sn152/nof_s8e1_n128/snapdir_252 
-output_file                ./out_z2_radius_2kpc_Jeans_TREE.hdf5
+output_file                ./out_z2_radius_0p05kpc_Sobolev_TREE.hdf5
 snapshot_type 		   GIZMO_MultiFile
 snapshot_chemistry_array   None 
 snapshot_flux_ion_array    ChimesFluxIon_output
@@ -25,9 +25,9 @@ shield_mode                Sobolev #Jeans
 dust_depletion             DC16 
 
 #distance based filtering. 
-filtering_radius           2 #kpc 
+filtering_radius           0.05 #kpc 
 disable_shielding_in_HII_regions 1 #1 or 0
-redshift                   2 
+redshift                   2.2800804619292014 #from snapshot 
 
 
 
