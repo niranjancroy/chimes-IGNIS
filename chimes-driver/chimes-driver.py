@@ -574,9 +574,10 @@ def main():
             init_chem_arr = my_snapshot_data.init_chem_arr
 
             if driver_pars["snapshot_type"] == "GIZMO_MultiFile":
-                center = my_snapshot_data.center
-                filtering_radius_cm = my_snapshot_data.filtering_radius_cm
-
+                center = my_snapshot_data.center #niranjan
+                filtering_radius_cm = my_snapshot_data.filtering_radius_cm #niranjan
+                star_hsml = my_snapshot_data.star_hsml #niranjan
+                print('SHAPE OF star_hsml IS = {}'.format(np.shape(star_hsml)))
             N_star = None 
 
             if driver_pars["UV_field"] == "StellarFluxes": 
@@ -908,14 +909,15 @@ def main():
         
         if driver_pars["IO_mode"] == "snapshot":
 
-            #niranjan 2022: adding center of the domain to the output 
+            #niranjan 2022: adding center of the domain, filtering radius to the output and saving smoothing lengths of stars in another file
             if driver_pars["snapshot_type"] == "GIZMO_MultiFile":
                 with h5py.File(driver_pars["output_file"], 'a') as h5file_out: 
                      center_array_name = "Center"
-                     radius_array_name = "FilteringRadius"
+                     radius_array_name = "FilteringRadiusCm"
                      h5file_out[center_array_name] = center
                      h5file_out[radius_array_name] = filtering_radius_cm 
-                 
+                with h5py.File('star_hsml.hdf5','a') as h5file_out:
+                     h5file_out['star_hsml'] = star_hsml
 
             if driver_pars["driver_mode"] == "eqm_state": 
                 # Write out eqm abundances to HDF5 file 
