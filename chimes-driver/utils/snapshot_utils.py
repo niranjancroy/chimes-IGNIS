@@ -44,6 +44,7 @@ class SnapshotData:
         self.gas_density = None
         self.center = None 
         self.filtering_radius_cm = None
+        self.star_hsml = None
         return 
 
     def set_shielding_array(self): 
@@ -233,7 +234,10 @@ class SnapshotData:
                             self.star_mass_arr = np.empty(0, dtype = np.float32) 
                             self.star_age_Myr_arr = np.empty(0, dtype = np.float32) 
 
+ 
                 else: 
+
+
                     raise Exception("compute_stellar_fluxes == %d not recognised. Aborting." % (self.driver_pars["compute_stellar_fluxes"], )) 
             elif self.driver_pars["UV_field"] == "S04": 
                 self.gas_coords_arr = np.array(h5file['PartType0/Coordinates']) * unit_length_in_cgs 
@@ -464,6 +468,7 @@ class SnapshotData:
                          self.star_mass_arr = np.empty(0, dtype = np.float32) 
                          self.star_age_Myr_arr = np.empty(0, dtype = np.float32) 
 
+
              else: 
                  raise Exception("compute_stellar_fluxes == %d not recognised. Aborting." % (self.driver_pars["compute_stellar_fluxes"], )) 
          elif self.driver_pars["UV_field"] == "S04": 
@@ -495,6 +500,15 @@ class SnapshotData:
 
          # Set the shielding length array 
          self.set_shielding_array() 
+         
+         Mesh_star = Meshoid(self.star_coords_arr, self.star_mass_arr)
+
+         self.star_hsml = Mesh_star.hsml
+         #print ("SHAPE OF STAR SMOOTHING LENGTH IN SNAPSHOT_UTILS IS = {}".format(np.shape(self.star_hsml)))
+
+         # with h5py.File('star_hsml.hdf5', 'a') as h5file_out:
+         #    h5file_out['star_hsml'] = star_hsml
+
 
 
          #reading the black hole coordinates to define the center
