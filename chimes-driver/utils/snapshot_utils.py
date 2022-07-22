@@ -78,7 +78,9 @@ class SnapshotData:
              print("Meshoid calculating density gradient...")        
              #print("Shape of Coord, Mass, HSML array = ", np.shape(self.gas_coords_arr), np.shape(self.gas_mass), np.shape(self.gas_hsml))
              M = Meshoid(self.gas_coords_arr, self.gas_mass, self.gas_hsml)
+             print('M done')
              density_gradient = M.D(self.gas_density) #calculating density gradient using meshoid
+             print('density_gradient done')
              density_gradient_magnitude = np.sqrt((density_gradient * density_gradient).sum(axis=1))       
              print("Density gradient calc done. Calculating Sobolev Shielding length...")      
              for i in range(len(self.nH_arr)):
@@ -488,15 +490,15 @@ class SnapshotData:
                  neutral_H = load_from_snapshot('NeutralHydrogenAbundance', 0, input_dir, snapnum)
                  self.HII_region_selection(neutral_H)                 
  
-         #reading the black hole coordinates to define the center
-         bh_center = load_from_snapshot('Coordinates', 5, input_dir, snapnum)
+         #reading the black hole coordinates to define the center-not anymore as it's manually read from the parameter file
          filtering_radius = self.driver_pars["filtering_radius"]
 
-         self.center = bh_center
+         self.center = np.array([self.driver_pars["center_x"], self.driver_pars["center_y"], self.driver_pars["center_z"]])
+         print('Center = {} \n'.format( self.center))
 
          self.filtering_radius_cm = filtering_radius * unit_length_in_cgs
 
-         self.distance_filter(bh_center, filtering_radius)
+         self.distance_filter(self.center, filtering_radius)
 
          # Set the shielding length array 
          self.set_shielding_array() 
