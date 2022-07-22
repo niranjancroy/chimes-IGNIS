@@ -6,6 +6,9 @@ driver_parameters = {
     "chimes_data_path" : "../chimes-data", 
     "EqAbundanceTable_filename": None, 
     "filtering_radius" : None, #niranjan 2021/ for selecting a small region of galaxy wrt center at black hole
+    "center_x" : None, #niranjan: having the center read manually from parameter file
+    "center_y" : None,
+    "center_z" : None,
     "IO_mode" : "grid",                 # Options: grid, snapshot 
     "driver_mode" : "noneq_evolution",  # Options: eqm_state, eqm_table, cooling_rates, noneq_evolution 
     "input_file" : None,
