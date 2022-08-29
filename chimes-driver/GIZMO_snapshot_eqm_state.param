@@ -1,3 +1,7 @@
+###>>>>>>>>>>>>> IMPORTANT >>>>>>>
+# please manually update the center and redshift of the simulated galaxy #niranjan 
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
 # General Parameters 
 chimes_library_path        /mnt/home/nroy/test/chimes-IGNIS/libchimes.so
 chimes_data_path           /mnt/home/nroy/test/chimes-IGNIS/chimes-data 
@@ -5,8 +9,10 @@ chimes_data_path           /mnt/home/nroy/test/chimes-IGNIS/chimes-data
 driver_mode                eqm_state 
 IO_mode		           snapshot 
 
-input_file 	     	   /mnt/sdceph/users/dangles/FIRE/bhfeedback/h113_HR_sn152/nof_s8e1_n128/snapdir_252 
-output_file                ./out_z2_radius_0p05kpc_Sobolev_TREE.hdf5
+input_file 	     	   /mnt/home/nroy/fire2/public_release/core_FIRE-2_runs/m12i_res7100/output/snapdir_600
+#input_file                 /mnt/sdceph/users/dangles/FIRE/bhfeedback/h113_HR_sn152/nof_s8e1_n128/snapdir_252 
+output_file                ./out_z0_R-10kpc_Sobolev_m12i_res7100.hdf5
+#output_file                ./out_z2p2_R-10kpc_Sobolev.hdf5
 snapshot_type 		   GIZMO_MultiFile
 snapshot_chemistry_array   None 
 snapshot_flux_ion_array    ChimesFluxIon_output
@@ -16,18 +22,28 @@ snapshot_unitMass_cgs	   1.989e43
 snapshot_unitLength_cgs    3.0857e21 
 snapshot_unitVelocity_cgs  1.0e5 
 
-compute_stellar_fluxes     2 # '1'-Chimes default; '2'-Using Tree; '3'-Using faster bruteforce
+compute_stellar_fluxes     3 # '1'-Chimes default; '2'-Using Tree; '3'-Using faster bruteforce
 stellar_fluxes_fEsc_ion    0.05 
 stellar_fluxes_fEsc_G0     0.1 
+
+
+#m12i_res7100, snapnum600 center 41792.15035948, 41792.15035948, 46267.67842755
+#
+#center_x                   21794.87712588 
+center_x                   41792.15035948 
+#center_y                   22620.51319306 
+center_y                   44131.23903253
+#center_z                   23352.74149838 
+center_z                   46267.67842755
 
 UV_field                   StellarFluxes
 shield_mode                Sobolev #Jeans 
 dust_depletion             DC16 
 
 #distance based filtering. 
-filtering_radius           0.05 #kpc 
+filtering_radius           10 #kpc 
 disable_shielding_in_HII_regions 1 #1 or 0
-redshift                   2.2800804619292014 #from snapshot 
+redshift                   0 #2.2800804619292014 #from snapshot 
 
 
 
