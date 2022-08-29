@@ -18,7 +18,7 @@ def FluxTarget_bruteforce(x_target, x_source, L_source):
     Returns:
     shape (N,3) array of stellar flux
     """
-    flux = zeros_like(x_target)
+    flux = zeros_like(x_target[:,0])
     for i in prange(x_target.shape[0]):
         dx = zeros(3)
         for j in range(x_source.shape[0]):
@@ -81,7 +81,7 @@ def FluxWalk(pos, tree, softening=0, no=-1, theta=0.7):
     theta - cell opening angle used to control force accuracy; smaller is slower (runtime ~ theta^-3) but more accurate. (default 0.7 gives ~1% accuracy)
     """
     if no < 0: no = tree.NumParticles # we default to the top-level node index
-    flux =  zeros(1,dtype=np.float64)
+    flux = 0 #zeros(1,dtype=np.float64)
     dx = np.empty(3,dtype=np.float64)
 
     h = max(tree.Softenings[no],softening) #this is defined just for the purpose of tree calculations, we'll have zero softening always
@@ -118,15 +118,17 @@ def FluxWalk(pos, tree, softening=0, no=-1, theta=0.7):
 def FluxTarget_treecal(pos_target, softening_target, tree, theta=0.7):
 
       if softening_target is None: softening_target = zeros(pos_target.shape[0])
-      result = np.zeros(pos_target.shape[0], dtype=np.float64)
+
+      #result = np.zeros(pos_target.shape[0], dtype=np.float64)
+      result = zeros_like(pos_target[:,0])
 
       for i in prange(pos_target.shape[0]): 
             result[i] = FluxWalk(pos_target[i], tree, softening=softening_target[i], theta=theta)
    
       return result
 
-#FluxTarget_treecal_parallel = njit(FluxTarget_treecal,fastmath=True,parallel=True) #njit causing crash in FluxTarget_treecal when shape[0] is used so not using in this case. Performance similar.
-#FluxTarget_treecal = njit(FluxTarget_treecal,fastmath=True)
+FluxTarget_treecal_parallel = njit(FluxTarget_treecal,fastmath=True,parallel=True) 
+FluxTarget_treecal = njit(FluxTarget_treecal,fastmath=True)
 
 
 def FluxTarget_tree(pos_target, pos_source, L_source, theta=.7, softening_source=None, tree=None, return_tree=False, parallel=False):
@@ -164,7 +166,8 @@ def FluxTarget_tree(pos_target, pos_source, L_source, theta=.7, softening_source
     quadrupole = False
 
     if softening_source is None and pos_source is not None: softening_source = np.zeros(len(pos_source))
-    if tree is None: tree = ConstructTree(np.float64(pos_source),np.float64(L_source), np.float64(softening_source), quadrupole=quadrupole) # build the tree if needed
+    #if tree is None: tree = ConstructTree(np.float64(pos_source),np.float64(L_source), np.float64(softening_source), quadrupole=quadrupole) # build the tree if needed
+    if tree is None: tree = ConstructTree(pos_source,L_source,softening_source, quadrupole=quadrupole) #niranjan: removing float64 as it's probably causing segfault due to high memory usage
     if parallel:
         flux = FluxTarget_treecal_parallel(pos_target, softening_target=None, tree=tree,theta=theta)
     else:
