@@ -9,10 +9,15 @@ chimes_data_path           /mnt/home/nroy/test/chimes-IGNIS/chimes-data
 driver_mode                eqm_state 
 IO_mode		           snapshot 
 
-input_file 	     	   /mnt/home/nroy/fire2/public_release/core_FIRE-2_runs/m12i_res7100/output/snapdir_600
+#input_file 	     	   /mnt/home/nroy/fire2/public_release/core_FIRE-2_runs/m12i_res7100/output/snapdir_600
+input_file                 /mnt/ceph/users/firesims/fire2/MassiveFIRE/A4_res33000/snapdir_151
 #input_file                 /mnt/sdceph/users/dangles/FIRE/bhfeedback/h113_HR_sn152/nof_s8e1_n128/snapdir_252 
-output_file                ./out_z0_R-10kpc_Sobolev_m12i_res7100.hdf5
+
+#output_file                ./out_z0_R-10kpc_Sobolev_m12i_res7100.hdf5
+output_file                ./out_z2p33_R-2kpc_Sobolev_A4_res33000.hdf5
+
 #output_file                ./out_z2p2_R-10kpc_Sobolev.hdf5
+
 snapshot_type 		   GIZMO_MultiFile
 snapshot_chemistry_array   None 
 snapshot_flux_ion_array    ChimesFluxIon_output
@@ -28,22 +33,33 @@ stellar_fluxes_fEsc_G0     0.1
 
 
 #m12i_res7100, snapnum600 center 41792.15035948, 41792.15035948, 46267.67842755
-#
+#nof_s8e1_n128, napnum 252 center 21794.87712588, 22620.51319306, 23352.74149838
+#A4_33000, snapnum 151 center 21430.81280276, 22217.34746307, 22932.14918987
+
 #center_x                   21794.87712588 
-center_x                   41792.15035948 
+#center_x                   41792.15035948 
+center_x                    21430.81280276
+
 #center_y                   22620.51319306 
-center_y                   44131.23903253
+#center_y                   44131.23903253
+center_y                    22217.34746307
+
 #center_z                   23352.74149838 
-center_z                   46267.67842755
+#center_z                   46267.67842755
+center_z                    22932.14918987
 
 UV_field                   StellarFluxes
 shield_mode                Sobolev #Jeans 
 dust_depletion             DC16 
 
 #distance based filtering. 
-filtering_radius           10 #kpc 
+filtering_radius           2 #kpc 
 disable_shielding_in_HII_regions 1 #1 or 0
-redshift                   0 #2.2800804619292014 #from snapshot 
+
+
+redshift                    2.3368 #A4
+#redshift                   0 #m12i
+#redshift                   2.2800804619292014 #nof
 
 
 
