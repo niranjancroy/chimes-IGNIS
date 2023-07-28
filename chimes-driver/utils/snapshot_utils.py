@@ -502,10 +502,11 @@ class SnapshotData:
 
          # Set the shielding length array 
          self.set_shielding_array() 
-         
-         Mesh_star = Meshoid(self.star_coords_arr, self.star_mass_arr)
 
-         self.star_hsml = Mesh_star.hsml
+         if self.driver_pars['UV_field'] == "StellarFluxes":
+             Mesh_star = Meshoid(self.star_coords_arr, self.star_mass_arr)
+
+             self.star_hsml = Mesh_star.hsml
          #print ("SHAPE OF STAR SMOOTHING LENGTH IN SNAPSHOT_UTILS IS = {}".format(np.shape(self.star_hsml)))
 
          # with h5py.File('star_hsml.hdf5', 'a') as h5file_out:
@@ -543,16 +544,10 @@ class SnapshotData:
          center *= unit_length_in_cgs
          
          self.gas_coords_arr -= center
-         self.star_coords_arr -= center
-
          #creating mask for gas particles
          R_gas = np.sqrt((self.gas_coords_arr * self.gas_coords_arr).sum(axis=1))
          gas_mask = R_gas < radius
 
-         #creating mask for star particles
-         R_star = np.sqrt((self.star_coords_arr * self.star_coords_arr).sum(axis=1))
-         star_mask = R_star < radius
-    
          #applying the masks. If property has more than one column, applying mask just on the number of particles
          self.metallicity_arr = self.metallicity_arr[gas_mask,:] #multicolumn
          self.nH_arr = self.nH_arr[gas_mask]
@@ -562,9 +557,16 @@ class SnapshotData:
          self.gas_mass = self.gas_mass[gas_mask]
          self.gas_density = self.gas_density[gas_mask]
          self.gas_hsml = self.gas_hsml[gas_mask]
-         self.star_coords_arr = self.star_coords_arr[star_mask,:] #multicolumn
-         self.star_mass_arr = self.star_mass_arr[star_mask]
-         self.star_age_Myr_arr = self.star_age_Myr_arr[star_mask]
+
+         if self.driver_pars['UV_field'] == "StellarFluxes":             
+         #creating mask for star particles
+             self.star_coords_arr -= center
+             R_star = np.sqrt((self.star_coords_arr * self.star_coords_arr).sum(axis=1))
+             star_mask = R_star < radius
+    
+             self.star_coords_arr = self.star_coords_arr[star_mask,:] #multicolumn
+             self.star_mass_arr = self.star_mass_arr[star_mask]
+             self.star_age_Myr_arr = self.star_age_Myr_arr[star_mask]
 
          if (self.driver_pars["disable_shielding_in_HII_regions"] == 1) : 
              self.HIIregion_delay_time  = self.HIIregion_delay_time[gas_mask]
