@@ -10,7 +10,7 @@ For more information on how to use CHIMES Driver, please see the [CHIMES User Gu
 New features added in chimes-driver by Niranjan and Daniel:
 - Option to read-in multifile snapshots from FIRE-like simulations
 	- By selecting 'GIZMO_MultiFile' as the 'snapshot_type' in parameter file
-- Manual HII region selection when not available from simulation data
+- HII region selection when not available from simulation data
 	- If disable_shielding_in_HII_regions is set to 1 and HII region array is not available in the simulation data
 - Sobolev approximation of shielding length
 	- If shield_mode is set to "Sobolev"
