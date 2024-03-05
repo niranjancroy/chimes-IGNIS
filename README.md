@@ -1,4 +1,4 @@
-   This is a github repo of Chimes (developed by Alex Richings https://richings.bitbucket.io/chimes/home.html) which has all the dependencies in one place with new features added by Niranjan and Daniel.
+   This is a github repo of Chimes (originally developed by Alex Richings https://richings.bitbucket.io/chimes/home.html) which has all the dependencies in one place with new features added by Niranjan and Daniel.
    
    INSTALLATION NOTES (also very useful notes by Alex Richings here https://richings.bitbucket.io/chimes/user_guide/GettingStarted/index.html based on which these instructions are compiled): 
    - Clone the repo from https://github.com/NiranjanCRoy/chimes-IGNIS.git
