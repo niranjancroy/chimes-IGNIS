@@ -22,6 +22,7 @@
    	- python setup.py install --prefix=/desired/path/to/meshoidlib
    	- add this '/path/+/lib/python3.8/site-packages/meshoid-1.41-py3.8.egg' to the PYTHONPATH (and in bash to avoid having to run it each time while using chimes) using following command:
      		- export PYTHONPATH="/path-to-meshoid-library/lib/python3.8/site-packages/meshoid-1.41-py3.8.egg"
+     		- double check the meshoid-1.41-py3.8.egg path as it might change depending on the python version
    
    
    TO RUN: 
