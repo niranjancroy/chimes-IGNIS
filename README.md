@@ -21,7 +21,7 @@
    	-  cd to the meshoid directory available in chimes-IGNIS and execute the following commands
    	- python setup.py install --prefix=/desired/path/to/meshoidlib
    	- add this '/path/+/lib/python3.8/site-packages/meshoid-1.41-py3.8.egg' to the PYTHONPATH (and in bash to avoid having to run it each time while using chimes) using following command:
-     		- export PYTHONPATH=/path-to-meshoid-library/lib/python3.8/site-packages/meshoid-1.41-py3.8.egg
+     		- export PYTHONPATH="/path-to-meshoid-library/lib/python3.8/site-packages/meshoid-1.41-py3.8.egg"
    
    
    TO RUN: 
