@@ -20,7 +20,8 @@
    - We now need to install Meshoid (developed by Mike Grudic https://github.com/mikegrudic/meshoid.git) which is needed to calculate the density gradient needed for the Sobolev shielding length calculations if chosen.
    	-  cd to the meshoid directory available in chimes-IGNIS and execute the following commands
    	- python setup.py install --prefix=/desired/path/to/meshoidlib
-   	- add this '/path/+/lib/python3.8/site-packages/meshoid-1.41-py3.8.egg' to the PYTHONPATH (and in bash to avoid having to run it each time while using chimes)
+   	- add this '/path/+/lib/python3.8/site-packages/meshoid-1.41-py3.8.egg' to the PYTHONPATH (and in bash to avoid having to run it each time while using chimes) using following command:
+     		- export PYTHONPATH=/path-to-meshoid-library/lib/python3.8/site-packages/meshoid-1.41-py3.8.egg
    
    
    TO RUN: 
